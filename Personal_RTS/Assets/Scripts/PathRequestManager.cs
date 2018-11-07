@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Threading;
 
 public class PathRequestManager : MonoBehaviour
 {
@@ -11,7 +12,7 @@ public class PathRequestManager : MonoBehaviour
     static PathRequestManager instance;
     Pathfinding pathfinding;
 
-    bool isPRocessingPath;
+    bool isProcessingPath;
 
     private void Awake()
     {
@@ -28,10 +29,19 @@ public class PathRequestManager : MonoBehaviour
 
     void TryProcessNext()
     {
-        if (!isPRocessingPath && pathRequestQueue.Count > 0)
+        /*if (!isProcessingPath && pathRequestQueue.Count > 0)
+        {
+            isProcessingPath = true;
+            Thread thread = new Thread(delegate ()
+            {
+                instance.pathfinding.FindPath(pathRequestQueue.Dequeue(), FinishedProcessingPath);
+            });
+            thread.Start();
+        }*/
+        if (!isProcessingPath && pathRequestQueue.Count > 0)
         {
             currentPathRequest = pathRequestQueue.Dequeue();
-            isPRocessingPath = true;
+            isProcessingPath = true;
             pathfinding.StartFindPath(currentPathRequest.pathStart, currentPathRequest.pathEnd);
         }
     }
@@ -39,20 +49,34 @@ public class PathRequestManager : MonoBehaviour
     public void FinishedProcessingPath(Vector3[] path, bool success)
     {
         currentPathRequest.callback(path, success);
-        isPRocessingPath = false;
+        isProcessingPath = false;
         TryProcessNext();
     }
+}
 
-    struct PathRequest
+public struct PathResult
+{
+    public Vector3[] path;
+    public bool success;
+    public Action<Vector3[], bool> callback;
+
+    public PathResult(Vector3[] _path, bool _success, Action<Vector3[], bool> _callback)
     {
-        public Vector3 pathStart, pathEnd;
-        public Action<Vector3[], bool> callback;
+        path = _path;
+        success = _success;
+        callback = _callback;
+    }
+}
 
-        public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback)
-        {
-            pathStart = _start;
-            pathEnd = _end;
-            callback = _callback;
-        }
+public struct PathRequest
+{
+    public Vector3 pathStart, pathEnd;
+    public Action<Vector3[], bool> callback;
+
+    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback)
+    {
+        pathStart = _start;
+        pathEnd = _end;
+        callback = _callback;
     }
 }
