@@ -7,7 +7,8 @@ using System.Threading;
 public class PathRequestManager : MonoBehaviour
 {
     Queue<PathRequest> pathRequestQueue = new Queue<PathRequest>();
-    PathRequest currentPathRequest;
+    //PathRequest currentPathRequest;
+    Queue<PathResult> results = new Queue<PathResult>();
 
     static PathRequestManager instance;
     Pathfinding pathfinding;
@@ -20,16 +21,63 @@ public class PathRequestManager : MonoBehaviour
         pathfinding = GetComponent<Pathfinding>();
     }
 
-    public static void RequestPath(Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool> callback)
+    public static void RequestPath(PathRequest request)//Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool> callback)
     {
-        PathRequest newRequest = new PathRequest(pathStart, pathEnd, callback);
-        instance.pathRequestQueue.Enqueue(newRequest);
+        //ThreadStart threadStart = delegate
+        //{
+        //    instance.pathfinding.FindPath(request, instance.FinishedProcessingPath);
+        //};
+        //threadStart.Invoke();
+        instance.RemoveSameUnitRequest(request);
+        instance.pathRequestQueue.Enqueue(request);
         instance.TryProcessNext();
+    }
+
+    void RemoveSameUnitRequest(PathRequest newRequest)
+    {
+        //lock(pathRequestQueue)
+        //{
+        //    for(int i = 0; i < pathRequestQueue.Count; ++i)
+        //    {
+        //        foreach (PathRequest request in pathRequestQueue)
+        //        {
+        //            if(request.requester == newRequest.requester)
+        //            {
+        //                request = newRequest;
+        //            }
+        //        }
+        //    }
+        //    for (int i = 0; i < pathRequestQueue.Count; ++i)
+        //    {
+        //
+        //    }
+        //}
+    }
+
+    private void Update()
+    {
+        //if (results.Count > 0)
+        //{
+        //    int resultsInQueue = results.Count;
+        //    lock(results)
+        //    {
+        //        for(int i = 0; i < resultsInQueue; ++i)
+        //        {
+        //            PathResult result = results.Dequeue();
+        //            result.callback(result.path, result.success);
+        //        }
+        //    }
+        //}
+        while(results.Count > 0)
+        {
+            PathResult result = results.Dequeue();
+            result.callback(result.path, result.success);
+        }
     }
 
     void TryProcessNext()
     {
-        /*if (!isProcessingPath && pathRequestQueue.Count > 0)
+        if (!isProcessingPath && pathRequestQueue.Count > 0)
         {
             isProcessingPath = true;
             Thread thread = new Thread(delegate ()
@@ -37,18 +85,22 @@ public class PathRequestManager : MonoBehaviour
                 instance.pathfinding.FindPath(pathRequestQueue.Dequeue(), FinishedProcessingPath);
             });
             thread.Start();
-        }*/
-        if (!isProcessingPath && pathRequestQueue.Count > 0)
-        {
-            currentPathRequest = pathRequestQueue.Dequeue();
-            isProcessingPath = true;
-            pathfinding.StartFindPath(currentPathRequest.pathStart, currentPathRequest.pathEnd);
         }
+        //if (!isProcessingPath && pathRequestQueue.Count > 0)
+        //{
+        //    currentPathRequest = pathRequestQueue.Dequeue();
+        //    isProcessingPath = true;
+        //    pathfinding.StartFindPath(currentPathRequest.pathStart, currentPathRequest.pathEnd);
+        //}
     }
 
-    public void FinishedProcessingPath(Vector3[] path, bool success)
+    public void FinishedProcessingPath(PathResult result)
     {
-        currentPathRequest.callback(path, success);
+        //lock (results)
+        //{
+            results.Enqueue(result);
+        //}
+        //result.callback(result.path, result.success);
         isProcessingPath = false;
         TryProcessNext();
     }
@@ -72,11 +124,13 @@ public struct PathRequest
 {
     public Vector3 pathStart, pathEnd;
     public Action<Vector3[], bool> callback;
+    public GameObject requester;
 
-    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback)
+    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback, GameObject _requester)
     {
         pathStart = _start;
         pathEnd = _end;
         callback = _callback;
+        requester = _requester;
     }
 }
