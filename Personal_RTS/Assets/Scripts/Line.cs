@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Obsolete("No longer use lines to calculate turn distance. Instace, use square distance from point")]
 public struct Line
 {
     const float VerticalLineGradient = float.MaxValue;

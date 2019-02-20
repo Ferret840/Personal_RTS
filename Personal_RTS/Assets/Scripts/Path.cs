@@ -6,15 +6,19 @@ using UnityEngine;
 public class Path
 {
     public readonly Vector3[] lookPoints;
+    [System.Obsolete("Use circle distance check")]
     public readonly Line[] turnBoundaries;
+    readonly float turnDistForDebug;
     public readonly int finishLineIndex;
     public readonly int slowDownIndex;
 
     public Path(Vector3[] waypoints, Vector3 startPos, float turnDist, float stoppingDist)
     {
+        turnDistForDebug = turnDist;
+
         lookPoints = waypoints;
-        turnBoundaries = new Line[lookPoints.Length];
-        finishLineIndex = turnBoundaries.Length - 1;
+        //turnBoundaries = new Line[lookPoints.Length];
+        finishLineIndex = lookPoints.Length - 1;
 
         Vector2 previousPoint = V3ToV2(startPos);
         for (int i = 0; i < finishLineIndex; ++i)
@@ -42,7 +46,7 @@ public class Path
         Vector2 currentPoint = V3ToV2(lookPoints[i]);
         Vector2 dirToCurrentPoint = (currentPoint - previousPoint).normalized;
         Vector2 turnBoundaryPoint = currentPoint - dirToCurrentPoint * turnDist;
-        turnBoundaries[i] = new Line(turnBoundaryPoint, previousPoint - dirToCurrentPoint * turnDist);
+        //turnBoundaries[i] = new Line(turnBoundaryPoint, previousPoint - dirToCurrentPoint * turnDist);
         return previousPoint = turnBoundaryPoint;
     }
 
@@ -60,9 +64,19 @@ public class Path
         }
 
         Gizmos.color = Color.white;
-        foreach (Line l in turnBoundaries)
+        for (int i = 0; i < lookPoints.Length - 2; ++i)
         {
-            l.DrawWithGizmos(10);
+            Gizmos.DrawLine(lookPoints[i], lookPoints[i + 1]);
+        }
+
+        Gizmos.color = Color.cyan;
+        //foreach (Line l in turnBoundaries)
+        //{
+        //    l.DrawWithGizmos(10);
+        //}
+        foreach (Vector3 p in lookPoints)
+        {
+            Gizmos.DrawWireSphere(p, turnDistForDebug);
         }
     }
 }

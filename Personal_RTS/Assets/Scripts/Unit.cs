@@ -7,11 +7,15 @@ public class Unit : Owner
     const float minPathUpdateTime = .2f;
     const float pathUpdateMoveThreshold = .5f;
 
+    public short dimension = 0;
+
     public Transform target;
     public float speed = 5;
     public float turnDist = 5;
     public float turnSpeed = 3;
     public float stoppingDist = 10;
+
+    public bool drawPath = false;
 
     public LayerMask ValidMovementLayers;
 
@@ -85,7 +89,7 @@ public class Unit : Owner
         if (Physics.Raycast(ray, out hit, 512f, ValidMovementLayers))
         {
             StopCoroutine("FollowPath");
-            PathRequestManager.RequestPath(new PathRequest(transform.position, hit.point, OnPathFound, gameObject));
+            PathRequestManager.RequestPath(new PathRequest(transform.position, hit.point, OnPathFound, gameObject, dimension));
         }
     }
 
@@ -93,66 +97,78 @@ public class Unit : Owner
     {
         //Vector3 currentWaypoint = path[0];
 
-        bool followingPath = true;
+        //bool followingPath = true;
         int pathIndex = 0;
         transform.LookAt(path.lookPoints[0]);
 
         float speedPercent = 1f;
 
+        /*To DO:
+         * 1: Prevent units from moving past the next waypoint if they move too fast
+         * 2: Calculate turn radius, then use radius to scan area of tiles to find obstacles.
+         *      If there are obstacles, they need to stop and turn
+         *      Otherwise, find some way to check if they've turned too far and need to move to the next point
+         */
         while (true)
         {
             Vector2 pos2D = new Vector2(transform.position.x, transform.position.z);
-            while (path.turnBoundaries[pathIndex].HasCrossedLine(pos2D))
+
+            /*float timeRemaining = Time.deltaTime;
+            while (timeRemaining > 0.0f)
+            {
+                if (transform.position == path.lookPoints[pathIndex])
+                {
+                    ++pathIndex;
+                    if (pathIndex < path.lookPoints.Length)
+                    {
+                        //float timeNeeded = (path.lookPoints[pathIndex] - transform.position).sqrMagnitude / (speed * speed);
+                        //transform.position = Vector3.MoveTowards(transform.position, path.lookPoints[pathIndex], speed * timeRemaining);
+                        Quaternion targetRotation = Quaternion.LookRotation(path.lookPoints[pathIndex] - transform.position);
+                        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed);
+                        transform.Translate(Vector3.forward * Time.deltaTime * speed * speedPercent, Space.Self);
+
+                        timeRemaining -= timeNeeded;
+                    }
+                    else
+                    {
+                        
+                    }
+                }
+
+                
+            }*/
+
+            //while (path.turnBoundaries[pathIndex].HasCrossedLine(pos2D))
+            while ((transform.position - path.lookPoints[pathIndex]).sqrMagnitude < turnDist * turnDist)
             {
                 if (pathIndex == path.finishLineIndex)
                 {
-                    followingPath = false;
+                    //followingPath = false;
                     break;
                 }
                 else
                     ++pathIndex;
             }
 
-            if(followingPath)
+            if (pathIndex >= path.slowDownIndex)
             {
-                if (pathIndex >= path.slowDownIndex)
+                //float dist = path.turnBoundaries[path.finishLineIndex].DistanceFromPoint(pos2D);
+                float sqrDist = (transform.position - path.lookPoints[pathIndex]).sqrMagnitude;
+                if (stoppingDist > 0)
                 {
-                    float dist = path.turnBoundaries[path.finishLineIndex].DistanceFromPoint(pos2D);
-                    if (stoppingDist > 0)
-                    {
-                        speedPercent = Mathf.Clamp(dist / stoppingDist, 0.1f, 1f);
-                    }
-
-                    if (pathIndex == path.finishLineIndex && dist <= 0.1f)
-                    {
-                        transform.position = path.lookPoints[pathIndex];
-                        break;
-                    }
+                    speedPercent = Mathf.Clamp(sqrDist / (stoppingDist * stoppingDist), 0.1f, 1f);
                 }
 
-                Quaternion targetRotation = Quaternion.LookRotation(path.lookPoints[pathIndex] - transform.position);
-                transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed);
-                transform.Translate(Vector3.forward * Time.deltaTime * speed * speedPercent, Space.Self);
+                if (pathIndex == path.finishLineIndex && sqrDist <= 0.1f)
+                {
+                    transform.position = path.lookPoints[pathIndex];
+                    break;
+                }
             }
-            /*float timeRemaining = Time.deltaTime;
-            while (timeRemaining > 0.0f)
-            {
-                if (transform.position == currentWaypoint)
-                {
-                    ++targetIndex;
-                    if (targetIndex >= path.Length)
-                    {
-                        yield break;
-                    }
 
-                    currentWaypoint = path[targetIndex];
-                }
-
-                float timeNeeded = (currentWaypoint - transform.position).magnitude / speed;
-                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, speed * timeRemaining);
-
-                timeRemaining -= timeNeeded;
-            }*/
+            Quaternion targetRotation = Quaternion.LookRotation(path.lookPoints[pathIndex] - transform.position);
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed);
+            transform.Translate(Vector3.forward * Time.deltaTime * speed * speedPercent, Space.Self);
 
             yield return null;
         }
@@ -177,7 +193,53 @@ public class Unit : Owner
 
     public void OnDrawGizmos()
     {
-        //if (path != null)
-        //    path.DrawWithGizmos();
+        if (drawPath && path != null)
+            path.DrawWithGizmos();
+    }
+}
+
+static class MovementTypeLibrary
+{
+    //name of movement type and MovementType containing info about it
+    static Dictionary<string, MovementType> TypesDict = new Dictionary<string, MovementType>();
+
+    static public void Add(string newType)
+    {
+
+    }
+
+    static public int GetMatchingModifier(string moveType, string terrainType)
+    {
+        MovementType type;
+        TypesDict.TryGetValue(moveType, out type);
+        return type.Get(terrainType);
+    }
+
+    static void Clear()
+    {
+        TypesDict.Clear();
+    }
+}
+
+public class MovementType
+{
+    //Name of the terrain and its modifier
+    Dictionary<string, int> TerrainSpeedModifiers = new Dictionary<string, int>();
+
+    public void Add(string terrain, int modifier)
+    {
+        TerrainSpeedModifiers.Add(terrain, modifier);
+    }
+
+    public Dictionary<string, int> GetAll()
+    {
+        return TerrainSpeedModifiers;
+    }
+
+    public int Get (string Value)
+    {
+        int val;
+        TerrainSpeedModifiers.TryGetValue(Value, out val);
+        return val;
     }
 }
