@@ -11,9 +11,9 @@ public class NonTerrainObstacle : MonoBehaviour
 
     Vector3[] corners = new Vector3[4];
 
-    public short dimension = 0;
+    /*public */LayerMask dimension = 0;
 
-    int leftX, topY, rightX, bottomY;
+    Vector3 m_BottomLeft, m_TopRight;
 
     //private void Awake()
     //{
@@ -24,24 +24,29 @@ public class NonTerrainObstacle : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
+        Init();
+    }
 
+    protected void Init()
+    {
         //Get the collider
         objCollider = gameObject.GetComponent<Collider>();
 
+        dimension = gameObject.layer;
+
         objCollider.enabled = true;
 
+        GetCorners();
         DoesBlockTerrain(true);
     }
-
+    
     private void OnDestroy()
     {
         DoesBlockTerrain(false);
     }
 
-    private void DoesBlockTerrain(bool blocksTerrain)
+    protected void GetCorners()
     {
-        Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
-
         //Get the starting rotation and set the object to not rotated
         Quaternion startRot = transform.rotation;
         float radians = -startRot.eulerAngles.y * Mathf.Deg2Rad;
@@ -83,14 +88,25 @@ public class NonTerrainObstacle : MonoBehaviour
                 maxY = v.z;
         }
 
-        gDimension.ModifyBlockage(!blocksTerrain, new Vector3(minX, 0, minY), new Vector3(maxX, 0, maxY), out leftX, out topY, out rightX, out bottomY);
-
-        //corners[0] += new Vector3(-gDimension.nodeRadius, 0, -gDimension.nodeRadius);
-        //corners[1] += new Vector3(gDimension.nodeRadius, 0, -gDimension.nodeRadius);
-        //corners[2] += new Vector3(-gDimension.nodeRadius, 0, gDimension.nodeRadius);
-        //corners[3] += new Vector3(-gDimension.nodeRadius, 0, -gDimension.nodeRadius);
+        m_BottomLeft = new Vector3(minX, 0, minY);
+        m_TopRight = new Vector3(maxX, 0, maxY);
 
         transform.rotation = startRot;
+    }
+
+    protected void CheckForBlockedTerrain()
+    {
+        Grid gDimension = Grid.GetGrid;
+
+        gDimension.AreaHasObstacle(dimension, m_BottomLeft, m_TopRight);
+    }
+
+    protected void DoesBlockTerrain(bool blocksTerrain)
+    {
+        //Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
+        Grid gDimension = Grid.GetGrid;
+
+        gDimension.ModifyBlockage(1 << gameObject.layer, !blocksTerrain, m_BottomLeft, m_TopRight);
     }
 
     private void OnDrawGizmos()

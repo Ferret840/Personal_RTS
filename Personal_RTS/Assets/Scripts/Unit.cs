@@ -89,7 +89,7 @@ public class Unit : Owner
         if (Physics.Raycast(ray, out hit, 512f, ValidMovementLayers))
         {
             StopCoroutine("FollowPath");
-            PathRequestManager.RequestPath(new PathRequest(transform.position, hit.point, OnPathFound, gameObject, dimension));
+            PathRequestManager.RequestPath(new PathRequest(transform.position, hit.point, OnPathFound, gameObject, 1 << gameObject.layer));
         }
     }
 

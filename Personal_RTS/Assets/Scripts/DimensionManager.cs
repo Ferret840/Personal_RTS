@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class DimensionManager : MonoBehaviour
+/*public class DimensionManager : MonoBehaviour
 {
     Grid[] grids;// = new List<Grid>();
 
@@ -28,3 +28,4 @@ public class DimensionManager : MonoBehaviour
         return instance.grids[i];
     }
 }
+*/

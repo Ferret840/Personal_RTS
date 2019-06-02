@@ -6,23 +6,20 @@ using System;
 
 public class Pathfinding : MonoBehaviour
 {
-    //PathRequestManager requestManager;
     Grid grid;
+
+    Heap<Node> open = new Heap<Node>(0);
+    HashSet<Node> closed = new HashSet<Node>();
 
     private void Awake()
     {
-        //requestManager = GetComponent<PathRequestManager>();
         //grid = GetComponent<Grid>();
     }
 
-    //public void StartFindPath(Vector3 startPos, Vector3 targetPos)
-    //{
-    //    StartCoroutine(FindPath(startPos, targetPos));
-    //}
-
     public void FindPath(PathRequest request, Action<PathResult> callback)
     {
-        grid = DimensionManager.GetGridOfDimension(request.dimension);
+        //grid = DimensionManager.GetGridOfDimension(request.dimension);
+        grid = Grid.GetGrid;
 
         Stopwatch sw = new Stopwatch();
         sw.Start();
@@ -34,7 +31,7 @@ public class Pathfinding : MonoBehaviour
         Node startNode = grid.NodeFromWorldPoint(request.pathStart);
         Node targetNode = grid.NodeFromWorldPoint(request.pathEnd);
 
-        if (startNode.walkable && targetNode.walkable && startNode != targetNode)
+        if (startNode.GetWalkableByDimension(request.dimension) && targetNode.GetWalkableByDimension(request.dimension) && startNode != targetNode)
         {
             Heap<Node> openSet = new Heap<Node>(grid.MaxSize);
             HashSet<Node> closedSet = new HashSet<Node>();
@@ -54,12 +51,12 @@ public class Pathfinding : MonoBehaviour
                     break;
                 }
 
-                foreach (Node neighbor in grid.GetNeighbors(currentNode))
+                foreach (Node neighbor in grid.GetNeighbors(request.dimension, currentNode))
                 {
-                    if (!neighbor.walkable || closedSet.Contains(neighbor))
+                    if (!neighbor.GetWalkableByDimension(request.dimension) || closedSet.Contains(neighbor))
                         continue;
 
-                    int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode, neighbor) + neighbor.movementPenalty;
+                    int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode, neighbor);
 
                     if (newMovementCostToNeighbor < neighbor.gCost || !openSet.Contains(neighbor))
                     {
@@ -78,12 +75,22 @@ public class Pathfinding : MonoBehaviour
             {
                 failReason = "openSet is empty";
             }
-        }
 
-        //yield return null;
+            lock(open)
+            {
+                lock (closed)
+                {
+                    if (pathSuccess)
+                    {
+                        open = openSet;
+                        closed = closedSet;
+                    }
+                }
+            }
+        }
+        
         if(pathSuccess)
             waypoints = RetracePath(startNode, targetNode);
-        //requestManager.FinishedProcessingPath(waypoints, pathSuccess);
         callback(new PathResult(waypoints, pathSuccess, request.callback, failReason));
     }
 
@@ -99,11 +106,10 @@ public class Pathfinding : MonoBehaviour
         }
 
         Vector3[] waypoints = SimplifyPath(path);
-        Array.Reverse(waypoints);//waypoints.Reverse();
+        Array.Reverse(waypoints);
         return waypoints;
     }
-
-    /* Needs fixing as it cuts corners */
+    
     Vector3[] SimplifyPath(List<Node> path)
     {
         List<Vector3> waypoints = new List<Vector3>();
@@ -111,24 +117,32 @@ public class Pathfinding : MonoBehaviour
 
         waypoints.Add(path[0].worldPosition);
 
-        //for (int i = 1; i < path.Count; ++i)
-        //{
-        //    Vector2 directionNew = new Vector2(path[i - 1].gridX - path[i].gridX, path[i - 1].gridY - path[i].gridY);
-        //    if(directionNew != directionOld)
-        //        waypoints.Add(path[i].worldPosition);
-        //    directionOld = directionNew;
-        //}
-        for (int i = 1; i < path.Count; ++i)
+        for (int curr = 1; curr < path.Count; ++curr)
         {
-            if (!path[i].isCorner)
-            {
-                continue;
-            }
+            ////If not a corner
+            //if (!path[curr].isCorner)
+            //{
+            //    //Get the direction from the previous turn to the current node
+            //    Vector2 directionNew = new Vector2(path[curr - 1].gridX - path[curr].gridX, path[curr -1].gridY - path[curr].gridY);
+            //
+            //    //If the direction changed, update the previous turn and add the node to the waypoints
+            //    if (directionNew != directionOld)
+            //    {
+            //        waypoints.Add(path[curr].worldPosition);
+            //    }
+            //
+            //    directionOld = directionNew;
+            //
+            //    continue;
+            //}
 
-            waypoints.Add(path[i].worldPosition);
+            waypoints.Add(path[curr].worldPosition);
         }
 
-        //waypoints.Add(path[path.Count - 1].worldPosition);
+        if (waypoints.Count <= 1)
+        {
+            grid.debugPath = path;
+        }
 
         return waypoints.ToArray();
     }
@@ -142,4 +156,20 @@ public class Pathfinding : MonoBehaviour
             return 14 * distY + 10 * (distX - distY);
         return 14 * distX + 10 * (distY - distX);
     }
+
+    //private void OnDrawGizmos()
+    //{
+    //    open.ToArray();
+    //    foreach (Node n in open.ToArray())
+    //    {
+    //        Gizmos.color = Color.green;
+    //        Gizmos.DrawCube(n.worldPosition, Vector3.one * 0.5f);
+    //    }
+    //
+    //    foreach (Node n in closed)
+    //    {
+    //        Gizmos.color = Color.black;
+    //        Gizmos.DrawCube(n.worldPosition, Vector3.one * 0.5f);
+    //    }
+    //}
 }
