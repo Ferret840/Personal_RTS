@@ -6,8 +6,6 @@ using UnityEngine;
 public class Path
 {
     public readonly Vector3[] lookPoints;
-    [System.Obsolete("Use circle distance check")]
-    public readonly Line[] turnBoundaries;
     readonly float turnDistForDebug;
     public readonly int finishLineIndex;
     public readonly int slowDownIndex;
@@ -17,17 +15,7 @@ public class Path
         turnDistForDebug = turnDist;
 
         lookPoints = waypoints;
-        //turnBoundaries = new Line[lookPoints.Length];
         finishLineIndex = lookPoints.Length - 1;
-
-        Vector2 previousPoint = V3ToV2(startPos);
-        for (int i = 0; i < finishLineIndex; ++i)
-        {
-            previousPoint = AddTurnBoundary(previousPoint, turnDist, i);
-        }
-
-        //Add final point, with turn dist set to 0 to turn into it instead
-        AddTurnBoundary(previousPoint, 0, finishLineIndex);
 
         float distFromEnd = 0;
         for (int i = lookPoints.Length - 1; i > 0; --i)
@@ -39,15 +27,6 @@ public class Path
                 break;
             }
         }
-    }
-
-    Vector2 AddTurnBoundary(Vector2 previousPoint, float turnDist, int i)
-    {
-        Vector2 currentPoint = V3ToV2(lookPoints[i]);
-        Vector2 dirToCurrentPoint = (currentPoint - previousPoint).normalized;
-        Vector2 turnBoundaryPoint = currentPoint - dirToCurrentPoint * turnDist;
-        //turnBoundaries[i] = new Line(turnBoundaryPoint, previousPoint - dirToCurrentPoint * turnDist);
-        return previousPoint = turnBoundaryPoint;
     }
 
     Vector2 V3ToV2(Vector3 v3)

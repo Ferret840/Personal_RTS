@@ -21,13 +21,8 @@ public class PathRequestManager : MonoBehaviour
         pathfinding = GetComponent<Pathfinding>();
     }
 
-    public static void RequestPath(PathRequest request)//Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool> callback)
+    public static void RequestPath(PathRequest request)
     {
-        //ThreadStart threadStart = delegate
-        //{
-        //    instance.pathfinding.FindPath(request, instance.FinishedProcessingPath);
-        //};
-        //threadStart.Invoke();
         Debug.Log("Adding path request for: " + request.requester.name);
         instance.RemoveSameUnitRequest(request);
             instance.pathRequestQueue.Add(request);
@@ -92,7 +87,6 @@ public class PathRequestManager : MonoBehaviour
     {
         if (!isProcessingPath && pathRequestQueue.Count > 0)
         {
-            //Debug.Log("Calculating path for: " + pathRequestQueue[0].requester.name);
             isProcessingPath = true;
             Thread thread = new Thread(delegate ()
             {
@@ -102,12 +96,6 @@ public class PathRequestManager : MonoBehaviour
             });
             thread.Start();
         }
-        //if (!isProcessingPath && pathRequestQueue.Count > 0)
-        //{
-        //    currentPathRequest = pathRequestQueue.Dequeue();
-        //    isProcessingPath = true;
-        //    pathfinding.StartFindPath(currentPathRequest.pathStart, currentPathRequest.pathEnd);
-        //}
     }
 
     public void FinishedProcessingPath(PathResult result)
@@ -143,9 +131,9 @@ public struct PathRequest
     public Vector3 pathStart, pathEnd;
     public Action<Vector3[], bool> callback;
     public GameObject requester;
-    public short dimension;
+    public LayerMask dimension;
 
-    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback, GameObject _requester, short _dimension)
+    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback, GameObject _requester, LayerMask _dimension)
     {
         pathStart = _start;
         pathEnd = _end;

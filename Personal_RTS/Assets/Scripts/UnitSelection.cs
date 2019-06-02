@@ -29,6 +29,7 @@ public class UnitSelection : MonoBehaviour
             MouseStartPos = Input.mousePosition;
             StartCoroutine(CheckForHold());
         }
+        SelectionLayer = cam.cullingMask - 1;
 
         //string AllNames = "";
         //foreach (Owner o in selectedUnits)
@@ -60,8 +61,10 @@ public class UnitSelection : MonoBehaviour
                 //Get every Owner type object
                 foreach (Unit u in FindObjectsOfType<Owner>())
                 {
-                    //If it's own by the player and is within the selection box, add it to be highlighted, otherwise unhighlight it
-                    if (u.OwnByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject))
+                    int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
+                    int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
+                    //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
+                    if (u.OwnByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
                     {
                         highlightedUnits.Add(u);
                         //Don't highlight if already selected
@@ -215,5 +218,43 @@ public static class Utils
         var bounds = new Bounds();
         bounds.SetMinMax(min, max);
         return bounds;
+    }
+
+    /// <summary>
+    /// Takes a LayerMask and converts it to an int containing which dimensions are exposed to that LayerMask.
+    /// (i.e. It can see Dimension 1 and/or Dimension 2)
+    /// </summary>
+    /// <param name="original">The original LayerMask value</param>
+    /// <returns>Returns an int containing the exposed dimensions</returns>
+    public static int LayerMaskToInt(LayerMask original)
+    {
+        int dim = 0;
+
+        if ((original & (1 << 8)) != 0)
+            dim |= 1;
+        if ((original & (1 << 9)) != 0)
+            dim |= 2;
+
+        return dim;
+    }
+
+    /// <summary>
+    /// Converts the given Layer of an object to which dimension the object exists in.
+    /// (i.e. It's in Dimension 1, 2, or Both (3))
+    /// </summary>
+    /// <param name="original">The original Layer value of the object</param>
+    /// <returns>Returns the game logic value for dimensions</returns>
+    public static int ObjectLayerToInt(int original)
+    {
+        int dim = 0;
+
+        if (original == 8)
+            dim |= 1;
+        if (original == 9)
+            dim |= 2;
+        if (original == 10)
+            dim |= 3;
+
+        return dim;
     }
 }

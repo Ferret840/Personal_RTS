@@ -2,49 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-enum LandNeighbors { Up         = 1 << 0,
-                     Down       = 1 << 1,
-                     Left       = 1 << 2,
-                     Right      = 1 << 3,
-                     UpLeft     = 1 << 4,
-                     UpRight    = 1 << 5,
-                     DownLeft   = 1 << 6,
-                     DownRight  = 1 << 7 };
-enum WaterNeighbors { Up         = LandNeighbors.Up << 8,
-                      Down       = LandNeighbors.Down << 8,
-                      Left       = LandNeighbors.Left << 8,
-                      Right      = LandNeighbors.Right << 8,
-                      UpLeft     = LandNeighbors.UpLeft << 8,
-                      UpRight    = LandNeighbors.UpRight << 8,
-                      DownLeft   = LandNeighbors.DownLeft << 8,
-                      DownRight  = LandNeighbors.DownRight << 8 };
-enum SpecialLandNeighbors { Up         = WaterNeighbors.Up << 8,
-                            Down       = WaterNeighbors.Down << 8,
-                            Left       = WaterNeighbors.Left << 8,
-                            Right      = WaterNeighbors.Right << 8,
-                            UpLeft     = WaterNeighbors.UpLeft << 8,
-                            UpRight    = WaterNeighbors.UpRight << 8,
-                            DownLeft   = WaterNeighbors.DownLeft << 8,
-                            DownRight  = WaterNeighbors.DownRight << 8 };
-enum SpecialWaterNeighbors { Up         = SpecialLandNeighbors.Up << 8,
-                             Down       = SpecialLandNeighbors.Down << 8,
-                             Left       = SpecialLandNeighbors.Left << 8,
-                             Right      = SpecialLandNeighbors.Right << 8,
-                             UpLeft     = SpecialLandNeighbors.UpLeft << 8,
-                             UpRight    = SpecialLandNeighbors.UpRight << 8,
-                             DownLeft   = SpecialLandNeighbors.DownLeft << 8,
-                             DownRight  = SpecialLandNeighbors.DownRight << 8 };
-
-enum SelfTerrainType { Land = LandNeighbors.Up, Water = WaterNeighbors.Up, SpecialLand = SpecialLandNeighbors.Up, SpecialWater = SpecialWaterNeighbors.Up };
-
 public class Node : IHeapItem<Node>
 {
-    public bool walkable;
-    public Walkability walkability;
+    ///<summary>
+    ///Always 0, 1, 2, or 3. Set bits indicate walkable in that dimension
+    ///</summary>
+    char walkable;
     public Vector3 worldPosition;
     public int gridX, gridY;
-    [System.Obsolete("No movement penalties for now")]
-    public int movementPenalty;
     public string Terrain;
 
     public int gCost;
@@ -52,14 +17,11 @@ public class Node : IHeapItem<Node>
     public Node parent;
     int heapIndex;
 
-    public bool isCorner;
-
     uint WalkableNeighbors = 0;
 
-    public Node(bool _blocked, Walkability _walkability, Vector3 _worldPos, int _gridX, int _gridY)
+    public Node(char _blocked, Vector3 _worldPos, int _gridX, int _gridY)
     {
         walkable = _blocked;
-        walkability = _walkability;
         worldPosition = _worldPos;
         gridX = _gridX;
         gridY = _gridY;
@@ -96,9 +58,11 @@ public class Node : IHeapItem<Node>
         return -compare;
     }
 
-    public void SetWalkable(bool newWalkable)
+    public void SetWalkable(char newWalkable)
     {
-        if (newWalkable)
+        walkable = newWalkable;
+
+        if (newWalkable != (char)0)
         {
             
         }
@@ -107,18 +71,39 @@ public class Node : IHeapItem<Node>
 
         }
     }
-}
 
-public class Walkability
-{
-    bool Land, Water;
-    bool SpecialLand, SpecialWater;
-
-    public Walkability(bool _land, bool _water, bool _specialLand, bool _specialWater)
+    /// <summary>
+    /// Takes a dimension and returns True if this Node can be traversed by that dimension.
+    /// </summary>
+    /// <param name="dimension">The dimension to be checked against as a LayerMask. 2^8, 2^9, 2^10)</param>
+    /// <returns>Returns true if the node can be traversed by the given dimension.</returns>
+    public bool GetWalkableByDimension(LayerMask dimension)
     {
-        Land = _land;
-        Water = _water;
-        SpecialLand = _specialLand;
-        SpecialWater = _specialWater;
+        char walkableBool = (char)0;
+
+        if ((dimension & (1 << 8)) != 0)
+        {
+            walkableBool |= (char)1;
+        }
+        else if ((dimension & (1 << 9)) != 0)
+        {
+            walkableBool |= (char)2;
+        }
+        else if ((dimension & (1 << 10)) != 0)
+        {
+            if (walkable == (char)3)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        return (walkable & walkableBool) != 0;
+    }
+
+    public char GetWalkable()
+    {
+        return walkable;
     }
 }

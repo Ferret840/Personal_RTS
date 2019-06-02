@@ -113,6 +113,12 @@ public class Heap<T> where T : IHeapItem<T>
         itemA.HeapIndex = itemB.HeapIndex;
         itemB.HeapIndex = temp;
     }
+
+    public T[] ToArray()
+    {
+        T[] array = items;
+        return array;
+    }
 }
 
 public interface IHeapItem<T> : IComparable<T>
