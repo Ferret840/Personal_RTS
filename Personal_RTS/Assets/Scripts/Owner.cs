@@ -25,16 +25,20 @@ public class Owner : MonoBehaviour
 
     virtual public void Deselect()
     {
-        print("O De");
+        SelectedEffect.SetActive(false);
+        IsSelected = false;
+        //print("O De");
     }
 
     virtual public void Select()
     {
-        print("O Se");
+        SelectedEffect.SetActive(true);
+        IsSelected = true;
+        //print("O Se");
     }
 
     virtual public void SetHighlighted(bool IsHighlighted)
     {
-
+        HighlightedEffect.SetActive(IsHighlighted);
     }
 }
