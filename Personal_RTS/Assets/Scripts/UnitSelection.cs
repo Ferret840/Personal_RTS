@@ -8,12 +8,15 @@ public class UnitSelection : MonoBehaviour
     int PlayerNumber = 0;
 
     public float ClickToHoldTime = 0.25f;
-    bool IsSelecting = false;
+    bool IsDragging = false;
     Vector3 MouseStartPos = Vector3.zero;
 
     Camera cam;
 
-    HashSet<Owner> selectedUnits = new HashSet<Owner>();
+    HashSet<Owner> selectedObjects = new HashSet<Owner>();
+
+    //Vector2 clickLoc = Vector2.zero;
+    public Vector2 minDragSize = Vector2.one * 10;
 
 	// Use this for initialization
 	void Start ()
@@ -24,58 +27,122 @@ public class UnitSelection : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
+        SelectionLayer = cam.cullingMask - 1;
+
+        HandleMouseInput();
+    }
+
+    /// <summary>
+    /// Handles mouse input for the purpose of Unit Selection
+    /// </summary>
+    void HandleMouseInput()
+    {
         if (Input.GetMouseButtonDown(0))
         {
             MouseStartPos = Input.mousePosition;
-            StartCoroutine(CheckForHold());
         }
-        SelectionLayer = cam.cullingMask - 1;
-
-        //string AllNames = "";
-        //foreach (Owner o in selectedUnits)
-        //{
-        //    AllNames = AllNames + o.name + ", ";
-        //}
-        //print(AllNames);
+        else if (Input.GetMouseButton(0) == true)
+        {
+            if (IsDragging == false && (Input.mousePosition - MouseStartPos).sqrMagnitude > minDragSize.sqrMagnitude)
+            {
+                IsDragging = true;
+                StartCoroutine(DragHighlight());
+            }
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            if (IsDragging == false)
+            {
+                ClickSelect();
+            }
+            else
+            {
+                IsDragging = false;
+            }
+        }
     }
 
-    IEnumerator CheckForHold()
+    /// <summary>
+    /// Handles logic for when selecting a singular object without dragging
+    /// </summary>
+    void ClickSelect()
     {
-        float t = 0f;
-
         RaycastHit hit;
         Ray ray = cam.ScreenPointToRay(MouseStartPos);
         bool ifCastHit = Physics.Raycast(ray, out hit, 512f, SelectionLayer);
+        RaycastHit[] hits = Physics.RaycastAll(ray, 512f, SelectionLayer);
 
-        HashSet<Owner> highlightedUnits = new HashSet<Owner>();
+        Owner closest = null;
+        float dist = float.MaxValue;
+
+        foreach (RaycastHit h in hits)
+        {
+            Owner o = h.transform.GetComponent<Owner>();
+            if (o == null)
+                continue;
+
+            float newDist = Vector3.SqrMagnitude(Input.mousePosition - cam.WorldToViewportPoint(gameObject.transform.position));
+            if (newDist < dist)
+            {
+                closest = h.transform.GetComponent<Owner>();
+                dist = newDist;
+            }
+        }
+
+        if (closest == null)
+        {
+            return;
+        }
+
+
+        if (Input.GetKey(KeyCode.LeftShift) == Input.GetKey(KeyCode.RightShift) == false)
+        {
+            //Deselect all other units
+            DeselectOld();
+        }
+
+        //Deselect the single unit if already selected
+        if (selectedObjects.Contains(closest))
+        {
+            closest.Deselect();
+            selectedObjects.Remove(closest);
+        }
+        //Otherwise, select the single unit
+        else
+        {
+            SelectNew(closest);
+        }
+    }
+
+    /// <summary>
+    /// Coroutine for handling while the mouse is held down
+    /// </summary>
+    /// <returns>Standard coroutine return. Loops (returns null) while mouse is held down</returns>
+    IEnumerator DragHighlight()
+    {
+        HashSet<Unit> highlightedUnits = new HashSet<Unit>();
 
         //While holding left mouse button
         while (Input.GetMouseButton(0))
         {
-            //Increment time to see if we should draw a box selector or not
-            t += Time.deltaTime;
-            if (t > ClickToHoldTime)
+            //Get every Owner type object
+            foreach (Unit u in FindObjectsOfType<Unit>())
             {
-                IsSelecting = true;
+                int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
+                int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
 
-                //Get every Owner type object
-                foreach (Unit u in FindObjectsOfType<Owner>())
+                //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
+                if (u.OwnByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
                 {
-                    int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
-                    int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
-                    //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
-                    if (u.OwnByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
-                    {
-                        highlightedUnits.Add(u);
-                        //Don't highlight if already selected
-                        if(selectedUnits.Contains(u) == false)
-                            u.SetHighlighted(true);
-                    }
-                    else
-                    {
-                        highlightedUnits.Remove(u);
-                        u.SetHighlighted(false);
-                    }
+                    highlightedUnits.Add(u);
+                    //Don't highlight if already selected
+                    if(selectedObjects.Contains(u.GetComponent<Owner>()) == false)
+                        u.SetHighlighted(true);
+                }
+                else
+                {
+                    highlightedUnits.Remove(u);
+                    u.SetHighlighted(false);
                 }
             }
             yield return null;
@@ -84,60 +151,47 @@ public class UnitSelection : MonoBehaviour
         //If no shift key is down
         if (Input.GetKey(KeyCode.LeftShift) == false && Input.GetKey(KeyCode.RightShift) == false)
         {
+            Debug.Log("Shift not pressed");
             //Deselect all other units
             DeselectOld();
         }
 
-        //When holding shfit and targeting a single unit
-        if (t < ClickToHoldTime)
+        //Select all units not already selected
+        foreach (Unit u in highlightedUnits)
         {
-            if (ifCastHit)
-            {
-                Owner newlySelected = hit.transform.GetComponent<Owner>();
-
-                //Deselect the single unit
-                if (selectedUnits.Contains(newlySelected))
-                {
-                    newlySelected.Deselect();
-                    selectedUnits.Remove(newlySelected);
-                }
-                //Select the single unit
-                else
-                {
-                    SelectNew(newlySelected);
-                }
-            }
+            if (selectedObjects.Contains(u.GetComponent<Owner>()) == false)
+                SelectNew(u.GetComponent<Owner>());
         }
-        //When holding shfit and doing a box selection
-        else
-        {
-            //Select all units not already selected
-            foreach (Owner o in highlightedUnits)
-            {
-                if(selectedUnits.Contains(o) == false)
-                    SelectNew(o);
-            }
-        }
-
-        IsSelecting = false;
     }
 
+    /// <summary>
+    /// Deselects all objects already selected
+    /// </summary>
     void DeselectOld()
     {
-        foreach (Owner o in selectedUnits)
+        foreach (Owner o in selectedObjects)
         {
             o.Deselect();
         }
-        selectedUnits.Clear();
+        selectedObjects.Clear();
     }
 
+    /// <summary>
+    /// Adds a new object to the list of selected objects
+    /// </summary>
+    /// <param name="newlySelected">The new object that was selected</param>
     void SelectNew(Owner newlySelected)
     {
         newlySelected.Select();
-        selectedUnits.Add(newlySelected);
+        selectedObjects.Add(newlySelected);
         newlySelected.SetHighlighted(false);
     }
 
+    /// <summary>
+    /// Checks if a given game object's position is within the selection bounds
+    /// </summary>
+    /// <param name="gameObject">The game object to check the position of</param>
+    /// <returns>Returns True if the position is within the selection bounds</returns>
     public bool IsWithinSelectionBounds(GameObject gameObject)
     {
         var viewportBounds = Utils.GetViewportBounds(cam, MouseStartPos, Input.mousePosition);
@@ -147,7 +201,7 @@ public class UnitSelection : MonoBehaviour
 
     void OnGUI()
     {
-        if (IsSelecting)
+        if (IsDragging)
         {
             // Create a rect from both mouse positions
             var rect = Utils.GetScreenRect(MouseStartPos, Input.mousePosition);

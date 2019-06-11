@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Unit : Owner
+[RequireComponent(typeof(Collider))]
+public class Unit : MonoBehaviour
 {
     const float minPathUpdateTime = .2f;
     const float pathUpdateMoveThreshold = .5f;
@@ -24,10 +25,18 @@ public class Unit : Owner
 
     PathRequest pathingRequest;
 
+    Owner owner;
+
+    public int OwnByPlayerNum
+    {
+        get { return owner.OwnByPlayerNum; }
+    }
+
     private void Start()
     {
         //StartCoroutine(UpdatePath());
         //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
+        owner = GetComponent<Owner>();
     }
 
     public void OnPathFound(Vector3[] waypoints, bool PathSuccessful)
@@ -66,7 +75,7 @@ public class Unit : Owner
 
     private void Update()
     {
-        if (IsSelected && Input.GetMouseButtonDown(1))
+        if (owner.IsSelected && Input.GetMouseButtonDown(1))
         {
             SetMoveLocation();
         }
@@ -174,21 +183,24 @@ public class Unit : Owner
         }
     }
 
-    override public void Deselect()
+    virtual public void Deselect()
     {
-        SelectedEffect.SetActive(false);
-        IsSelected = false;
+        owner.Deselect();
+        //owner.SelectedEffect.SetActive(false);
+        //owner.IsSelected = false;
     }
 
-    override public void Select()
+    virtual public void Select()
     {
-        SelectedEffect.SetActive(true);
-        IsSelected = true;
+        owner.Select();
+        //owner.SelectedEffect.SetActive(true);
+        //owner.IsSelected = true;
     }
 
-    public override void SetHighlighted(bool IsHighlighted)
+    virtual public void SetHighlighted(bool IsHighlighted)
     {
-        HighlightedEffect.SetActive(IsHighlighted);
+        owner.SetHighlighted(IsHighlighted);
+        //owner.HighlightedEffect.SetActive(IsHighlighted);
     }
 
     public void OnDrawGizmos()
