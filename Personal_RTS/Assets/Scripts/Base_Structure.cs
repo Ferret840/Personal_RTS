@@ -2,43 +2,40 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Owner))]
 public class Base_Structure : NonTerrainObstacle
 {
-    Owner owner;
-
-    public int OwnByPlayerNum
-    {
-        get { return owner.OwnByPlayerNum; }
-    }
-
     // Use this for initialization
     void Start()
     {
         Init();
-        owner = GetComponent<Owner>();
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
-		
-	}
-
-    virtual public void Deselect()
-    {
-        owner.SelectedEffect.SetActive(false);
-        owner.IsSelected = false;
+        if (IsSelected && Input.GetKeyDown(KeyCode.Delete))
+        {
+            TakeDamage(1);
+        }
     }
 
-    virtual public void Select()
+    override public void Deselect()
     {
-        owner.SelectedEffect.SetActive(true);
-        owner.IsSelected = true;
+        base.Deselect();
+        //owner.SelectedEffect.SetActive(false);
+        //owner.IsSelected = false;
     }
 
-    virtual public void SetHighlighted(bool IsHighlighted)
+    override public void Select()
     {
-        owner.HighlightedEffect.SetActive(IsHighlighted);
+        base.Select();
+        //owner.SelectedEffect.SetActive(true);
+        //owner.IsSelected = true;
+    }
+
+    override public void SetHighlighted(bool IsHighlighted)
+    {
+        base.SetHighlighted(IsHighlighted);
+        //owner.HighlightedEffect.SetActive(IsHighlighted);
     }
 }

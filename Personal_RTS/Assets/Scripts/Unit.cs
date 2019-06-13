@@ -3,47 +3,49 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class Unit : MonoBehaviour
+public class Unit : Owner
 {
-    const float minPathUpdateTime = .2f;
-    const float pathUpdateMoveThreshold = .5f;
-
-    public short dimension = 0;
-
-    public Transform target;
-    public float speed = 5;
-    public float turnDist = 5;
-    public float turnSpeed = 3;
-    public float stoppingDist = 10;
-
+    //const float minPathUpdateTime = .2f;
+    //const float pathUpdateMoveThreshold = .5f;
+    //
+    //public short dimension = 0;
+    //
+    //public Transform target;
+    //public float speed = 5;
+    //public float turnDist = 5;
+    //public float turnSpeed = 3;
+    //public float stoppingDist = 10;
+    //
     public bool drawPath = false;
-
-    public LayerMask ValidMovementLayers;
 
     Path path;
     //int targetIndex;
 
     PathRequest pathingRequest;
 
-    Owner owner;
+    [SerializeField]
+    UnitVariables stats;
 
-    public int OwnByPlayerNum
+    public UnitVariables GetUnitStats
     {
-        get { return owner.OwnByPlayerNum; }
+        get { return stats; }
+    }
+    public UnitVariables SetUnitStats
+    {
+        set { stats = value; }
     }
 
     private void Start()
     {
         //StartCoroutine(UpdatePath());
         //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
-        owner = GetComponent<Owner>();
     }
 
     public void OnPathFound(Vector3[] waypoints, bool PathSuccessful)
     {
         if(PathSuccessful)
         {
-            path = new Path(waypoints, transform.position, turnDist, stoppingDist);
+            path = new Path(waypoints, transform.position, stats.turnDist, stats.stoppingDist);
 
             StopCoroutine("FollowPath");
             StartCoroutine("FollowPath");
@@ -75,31 +77,38 @@ public class Unit : MonoBehaviour
 
     private void Update()
     {
-        if (owner.IsSelected && Input.GetMouseButtonDown(1))
+        //if (IsSelected && Input.GetMouseButtonDown(1))
+        //{
+        //    SetMoveLocation();
+        //}
+
+        if (IsSelected && Input.GetKeyDown(KeyCode.Delete))
         {
-            SetMoveLocation();
+            TakeDamage(1);
         }
     }
 
-    void SetMoveLocation()
+    override public void OnRightMouse()
     {
-        /*
-         * TO DO:
-         * Add the functionality to pathfinding to search through different layermasks to allow different movement types
-         * while at the same time increasing the speed by creating a neighbor bit check of booleans for each movement type
-         * to incrase pathfinding speed.
-         * 
-         * Perhaps at level load detect all units that get loaded in and create this list for each unique movement type/layer combo
-         * This could handle every case while also saving memory by not creating the neighbor list for non-existing combos
-         * */
+        base.OnRightMouse();
+        FindTargetLocation();
+    }
+
+    void FindTargetLocation()
+    {
         RaycastHit hit;
         Camera cam = Camera.main;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out hit, 512f, ValidMovementLayers))
         {
             StopCoroutine("FollowPath");
-            PathRequestManager.RequestPath(new PathRequest(transform.position, hit.point, OnPathFound, gameObject, 1 << gameObject.layer));
+            SetMoveLocation(hit.point);
         }
+    }
+
+    public void SetMoveLocation(Vector3 target)
+    {
+        PathRequestManager.RequestPath(new PathRequest(transform.position, target, OnPathFound, gameObject, 1 << gameObject.layer));
     }
 
     IEnumerator FollowPath()
@@ -148,7 +157,7 @@ public class Unit : MonoBehaviour
             }*/
 
             //while (path.turnBoundaries[pathIndex].HasCrossedLine(pos2D))
-            while ((transform.position - path.lookPoints[pathIndex]).sqrMagnitude < turnDist * turnDist)
+            while ((transform.position - path.lookPoints[pathIndex]).sqrMagnitude < stats.turnDist * stats.turnDist)
             {
                 if (pathIndex == path.finishLineIndex)
                 {
@@ -163,9 +172,9 @@ public class Unit : MonoBehaviour
             {
                 //float dist = path.turnBoundaries[path.finishLineIndex].DistanceFromPoint(pos2D);
                 float sqrDist = (transform.position - path.lookPoints[pathIndex]).sqrMagnitude;
-                if (stoppingDist > 0)
+                if (stats.stoppingDist > 0)
                 {
-                    speedPercent = Mathf.Clamp(sqrDist / (stoppingDist * stoppingDist), 0.1f, 1f);
+                    speedPercent = Mathf.Clamp(sqrDist / (stats.stoppingDist * stats.stoppingDist), 0.1f, 1f);
                 }
 
                 if (pathIndex == path.finishLineIndex && sqrDist <= 0.1f)
@@ -176,30 +185,30 @@ public class Unit : MonoBehaviour
             }
 
             Quaternion targetRotation = Quaternion.LookRotation(path.lookPoints[pathIndex] - transform.position);
-            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed);
-            transform.Translate(Vector3.forward * Time.deltaTime * speed * speedPercent, Space.Self);
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * stats.turnSpeed);
+            transform.Translate(Vector3.forward * Time.deltaTime * stats.speed * speedPercent, Space.Self);
 
             yield return null;
         }
     }
 
-    virtual public void Deselect()
+    override public void Deselect()
     {
-        owner.Deselect();
+        base.Deselect();
         //owner.SelectedEffect.SetActive(false);
         //owner.IsSelected = false;
     }
 
-    virtual public void Select()
+    override public void Select()
     {
-        owner.Select();
+        base.Select();
         //owner.SelectedEffect.SetActive(true);
         //owner.IsSelected = true;
     }
 
-    virtual public void SetHighlighted(bool IsHighlighted)
+    override public void SetHighlighted(bool IsHighlighted)
     {
-        owner.SetHighlighted(IsHighlighted);
+        base.SetHighlighted(IsHighlighted);
         //owner.HighlightedEffect.SetActive(IsHighlighted);
     }
 
@@ -254,4 +263,18 @@ public class MovementType
         TerrainSpeedModifiers.TryGetValue(Value, out val);
         return val;
     }
+}
+
+[System.Serializable]
+public class UnitVariables
+{
+    const float minPathUpdateTime = .2f;
+    const float pathUpdateMoveThreshold = .5f;
+
+    public short dimension = 1;
+    
+    public float speed = 10;
+    public float turnDist = 1;
+    public float turnSpeed = 1000;
+    public float stoppingDist = 0.1f;
 }

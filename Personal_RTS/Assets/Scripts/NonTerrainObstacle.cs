@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class NonTerrainObstacle : MonoBehaviour
+public class NonTerrainObstacle : Owner
 {
     public bool DrawGizmos = false;
 
@@ -40,7 +40,7 @@ public class NonTerrainObstacle : MonoBehaviour
         DoesBlockTerrain(true);
     }
     
-    private void OnDestroy()
+    override protected void OnDestroy()
     {
         DoesBlockTerrain(false);
     }
