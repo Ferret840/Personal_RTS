@@ -15,6 +15,8 @@ public class UnitSelection : MonoBehaviour
 
     HashSet<Owner> selectedObjects = new HashSet<Owner>();
 
+    public KeyCode[] keycodes = new KeyCode[0];
+
     //Vector2 clickLoc = Vector2.zero;
     public Vector2 minDragSize = Vector2.one * 10;
 
@@ -30,6 +32,8 @@ public class UnitSelection : MonoBehaviour
         SelectionLayer = cam.cullingMask - 1;
 
         HandleMouseInput();
+
+        HandleKeyboardInput();
     }
 
     /// <summary>
@@ -58,6 +62,35 @@ public class UnitSelection : MonoBehaviour
             else
             {
                 IsDragging = false;
+            }
+        }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            foreach (Owner o in selectedObjects)
+            {
+                o.OnRightMouse();
+            }
+        }
+    }
+
+    void HandleKeyboardInput()
+    {
+        foreach (KeyCode k in keycodes)
+        {
+            if (Input.GetKeyDown(k))
+            {
+                foreach (Owner o in selectedObjects)
+                {
+                    o.OnKeyDown(k);
+                }
+            }
+            else if (Input.GetKeyUp(k))
+            {
+                foreach (Owner o in selectedObjects)
+                {
+                    o.OnKeyUp(k);
+                }
             }
         }
     }
@@ -94,8 +127,7 @@ public class UnitSelection : MonoBehaviour
             return;
         }
 
-
-        if (Input.GetKey(KeyCode.LeftShift) == Input.GetKey(KeyCode.RightShift) == false)
+        if (Input.GetKey(KeyCode.LeftShift) == false && Input.GetKey(KeyCode.RightShift) == false)
         {
             //Deselect all other units
             DeselectOld();
@@ -132,7 +164,7 @@ public class UnitSelection : MonoBehaviour
                 int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
 
                 //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
-                if (u.OwnByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
+                if (u.ControlledByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
                 {
                     highlightedUnits.Add(u);
                     //Don't highlight if already selected
@@ -171,9 +203,21 @@ public class UnitSelection : MonoBehaviour
     {
         foreach (Owner o in selectedObjects)
         {
+            o.onDied -= DeselectSingle;
             o.Deselect();
         }
         selectedObjects.Clear();
+    }
+
+    /// <summary>
+    /// Deselects this given object
+    /// </summary>
+    /// <param name="target">The object to remove from selection</param>
+    void DeselectSingle(Owner target)
+    {
+        target.onDied -= DeselectSingle;
+        target.Deselect();
+        selectedObjects.Remove(target);
     }
 
     /// <summary>
@@ -182,6 +226,8 @@ public class UnitSelection : MonoBehaviour
     /// <param name="newlySelected">The new object that was selected</param>
     void SelectNew(Owner newlySelected)
     {
+        Debug.Log("Selected: " + newlySelected.name);
+        newlySelected.onDied += DeselectSingle;
         newlySelected.Select();
         selectedObjects.Add(newlySelected);
         newlySelected.SetHighlighted(false);
@@ -310,5 +356,10 @@ public static class Utils
             dim |= 3;
 
         return dim;
+    }
+
+    public static int IntToLayer(int original)
+    {
+        return original + 7;
     }
 }
