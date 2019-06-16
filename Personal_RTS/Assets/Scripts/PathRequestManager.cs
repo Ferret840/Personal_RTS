@@ -23,7 +23,7 @@ public class PathRequestManager : MonoBehaviour
 
     public static void RequestPath(PathRequest request)
     {
-        Debug.Log("Adding path request for: " + request.requester.name);
+        //Debug.Log("Adding path request for: " + request.requester.name);
         instance.RemoveSameUnitRequest(request);
             instance.pathRequestQueue.Add(request);
         instance.TryProcessNext();
