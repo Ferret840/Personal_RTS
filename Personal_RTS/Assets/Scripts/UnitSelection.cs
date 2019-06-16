@@ -183,7 +183,7 @@ public class UnitSelection : MonoBehaviour
         //If no shift key is down
         if (Input.GetKey(KeyCode.LeftShift) == false && Input.GetKey(KeyCode.RightShift) == false)
         {
-            Debug.Log("Shift not pressed");
+            //Debug.Log("Shift not pressed");
             //Deselect all other units
             DeselectOld();
         }
@@ -226,7 +226,7 @@ public class UnitSelection : MonoBehaviour
     /// <param name="newlySelected">The new object that was selected</param>
     void SelectNew(Owner newlySelected)
     {
-        Debug.Log("Selected: " + newlySelected.name);
+        //Debug.Log("Selected: " + newlySelected.name);
         newlySelected.onDied += DeselectSingle;
         newlySelected.Select();
         selectedObjects.Add(newlySelected);

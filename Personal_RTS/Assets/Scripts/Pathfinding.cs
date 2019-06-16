@@ -8,8 +8,12 @@ public class Pathfinding : MonoBehaviour
 {
     Grid grid;
 
-    Heap<Node> open = new Heap<Node>(0);
-    HashSet<Node> closed = new HashSet<Node>();
+    //Heap<Node> open = new Heap<Node>(0);
+    //HashSet<Node> closed = new HashSet<Node>();
+
+    uint pathID = uint.MaxValue;
+
+    double totalTime = 0;
 
     private void Awake()
     {
@@ -33,27 +37,35 @@ public class Pathfinding : MonoBehaviour
 
         if (startNode.GetWalkableByDimension(request.dimension) && targetNode.GetWalkableByDimension(request.dimension) && startNode != targetNode)
         {
+            ++pathID;
+
             Heap<Node> openSet = new Heap<Node>(grid.MaxSize);
-            HashSet<Node> closedSet = new HashSet<Node>();
+            //HashSet<Node> closedSet = new HashSet<Node>();
 
             openSet.Add(startNode);
 
             while (openSet.Count > 0)
             {
                 Node currentNode = openSet.RemoveFirst();
-                closedSet.Add(currentNode);
+                currentNode.lastPathID = pathID;
+                //closedSet.Add(currentNode);
 
                 if (currentNode == targetNode)
                 {
                     sw.Stop();
                     //print("Path Found: " + sw.ElapsedMilliseconds + " ms");
+                    totalTime += sw.ElapsedMilliseconds;
+                    if (pathID > 0 && pathID % 100 == 0)
+                    {
+                        print("Average Time: " + (totalTime / pathID) + " ms");
+                    }
                     pathSuccess = true;
                     break;
                 }
 
                 foreach (Node neighbor in grid.GetNeighbors(request.dimension, currentNode))
                 {
-                    if (!neighbor.GetWalkableByDimension(request.dimension) || closedSet.Contains(neighbor))
+                    if (!neighbor.GetWalkableByDimension(request.dimension) || neighbor.lastPathID == pathID)
                         continue;
 
                     int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode, neighbor);
@@ -71,21 +83,36 @@ public class Pathfinding : MonoBehaviour
                     }
                 }
             }
-            if(openSet.Count <= 0)
+            if (openSet.Count <= 0)
             {
                 failReason = "openSet is empty";
             }
 
-            lock(open)
+            //lock(open)
+            //{
+            //    lock (closed)
+            //    {
+            //        if (pathSuccess)
+            //        {
+            //            open = openSet;
+            //            closed = closedSet;
+            //        }
+            //    }
+            //}
+        }
+        else
+        {
+            if (!startNode.GetWalkableByDimension(request.dimension))
             {
-                lock (closed)
-                {
-                    if (pathSuccess)
-                    {
-                        open = openSet;
-                        closed = closedSet;
-                    }
-                }
+                failReason = "Start Location isn't walkable in dimension: " + (Mathf.Log(request.dimension >> 7, 2)) + " at grid: " + startNode.gridX + ", " + startNode.gridY;
+            }
+            if (!targetNode.GetWalkableByDimension(request.dimension))
+            {
+                failReason = "Target Location isn't walkable in dimension: " + (Mathf.Log(request.dimension >> 7, 2)) + " at grid: " + startNode.gridX + ", " + startNode.gridY;
+            }
+            if (startNode == targetNode)
+            {
+                failReason = "Start location (" + request.pathStart + ") and target location (" + request.pathEnd + ") are the same node";
             }
         }
         

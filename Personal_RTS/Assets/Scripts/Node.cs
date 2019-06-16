@@ -17,6 +17,8 @@ public class Node : IHeapItem<Node>
     public Node parent;
     int heapIndex;
 
+    public uint lastPathID = uint.MaxValue;
+
     uint WalkableNeighbors = 0;
 
     public Node(char _blocked, Vector3 _worldPos, int _gridX, int _gridY)
