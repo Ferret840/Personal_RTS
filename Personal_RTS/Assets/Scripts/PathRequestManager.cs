@@ -69,13 +69,13 @@ public class PathRequestManager : MonoBehaviour
         //        }
         //    }
         //}
-        while(results.Count > 0)
+        if(results.Count > 0)
         {
             PathResult result = results.Dequeue();
             if (!result.success)
             {
                 Debug.Log("Pathing failed due to: " + result.failReason);
-                continue;
+                //continue;
             }
             result.callback(result.path, result.success);
         }

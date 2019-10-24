@@ -7,7 +7,7 @@ public class UnitSelection : MonoBehaviour
     public LayerMask SelectionLayer;
     int PlayerNumber = 0;
 
-    public float ClickToHoldTime = 0.25f;
+    //public float ClickToHoldTime = 0.25f;
     bool IsDragging = false;
     Vector3 MouseStartPos = Vector3.zero;
 
@@ -15,13 +15,38 @@ public class UnitSelection : MonoBehaviour
 
     HashSet<Owner> selectedObjects = new HashSet<Owner>();
 
+    static List<List<Unit>> AllUnits;// = new List<List<Unit>>(8);
+
+    static public void AddUnit(Unit u)
+    {
+        AllUnits[u.ControlledByPlayerNum].Add(u);
+    }
+
+    static public void RemoveUnit(Unit u)
+    {
+        AllUnits[u.ControlledByPlayerNum].Remove(u);
+    }
+
     public KeyCode[] keycodes = new KeyCode[0];
 
     //Vector2 clickLoc = Vector2.zero;
     public Vector2 minDragSize = Vector2.one * 10;
 
-	// Use this for initialization
-	void Start ()
+    private void Awake()
+    {
+        if (AllUnits == null)
+        {
+            AllUnits = new List<List<Unit>>(8);
+
+            for (int i = 0; i < AllUnits.Capacity; ++i)
+            {
+                AllUnits.Add(new List<Unit>(8));
+            }
+        }
+    }
+
+    // Use this for initialization
+    void Start ()
     {
         cam = Camera.main;
 	}
@@ -102,8 +127,8 @@ public class UnitSelection : MonoBehaviour
     {
         RaycastHit hit;
         Ray ray = cam.ScreenPointToRay(MouseStartPos);
-        bool ifCastHit = Physics.Raycast(ray, out hit, 512f, SelectionLayer);
-        RaycastHit[] hits = Physics.RaycastAll(ray, 512f, SelectionLayer);
+        bool ifCastHit = Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
         Owner closest = null;
         float dist = float.MaxValue;
@@ -157,14 +182,14 @@ public class UnitSelection : MonoBehaviour
         //While holding left mouse button
         while (Input.GetMouseButton(0))
         {
-            //Get every Owner type object
-            foreach (Unit u in FindObjectsOfType<Unit>())
+            //Get every Unit type object
+            foreach (Unit u in AllUnits[PlayerNumber])
             {
                 int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
                 int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
 
                 //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
-                if (u.ControlledByPlayerNum == PlayerNumber && IsWithinSelectionBounds(u.gameObject) && (SelectLayer & UnitLayer) != 0)
+                if (u.ControlledByPlayerNum == PlayerNumber && (SelectLayer & UnitLayer) != 0 && IsWithinSelectionBounds(u.gameObject))
                 {
                     highlightedUnits.Add(u);
                     //Don't highlight if already selected
@@ -191,8 +216,9 @@ public class UnitSelection : MonoBehaviour
         //Select all units not already selected
         foreach (Unit u in highlightedUnits)
         {
-            if (selectedObjects.Contains(u.GetComponent<Owner>()) == false)
-                SelectNew(u.GetComponent<Owner>());
+            Owner o = u.GetComponent<Owner>();
+            if (selectedObjects.Contains(o) == false)
+                SelectNew(o);
         }
     }
 
@@ -251,7 +277,7 @@ public class UnitSelection : MonoBehaviour
         {
             // Create a rect from both mouse positions
             var rect = Utils.GetScreenRect(MouseStartPos, Input.mousePosition);
-            Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
+            //Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
             Utils.DrawScreenRectBorder(rect, 2, new Color(0.8f, 0.8f, 0.95f));
         }
     }
