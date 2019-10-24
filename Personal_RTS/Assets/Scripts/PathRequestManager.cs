@@ -11,14 +11,14 @@ public class PathRequestManager : MonoBehaviour
     Queue<PathResult> results = new Queue<PathResult>();
 
     static PathRequestManager instance;
-    Pathfinding pathfinding;
+    //Pathfinding pathfinding;
 
     bool isProcessingPath;
 
     private void Awake()
     {
         instance = this;
-        pathfinding = GetComponent<Pathfinding>();
+        //pathfinding = GetComponent<Pathfinding>();
     }
 
     public static void RequestPath(PathRequest request)
@@ -92,7 +92,7 @@ public class PathRequestManager : MonoBehaviour
             {
                 PathRequest p = pathRequestQueue[0];
                 pathRequestQueue.RemoveAt(0);
-                instance.pathfinding.FindPath(p, FinishedProcessingPath);
+                //instance.pathfinding.FindPath(p, FinishedProcessingPath);
             });
             thread.Start();
         }
