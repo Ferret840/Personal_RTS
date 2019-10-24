@@ -19,6 +19,7 @@ public class Unit : Owner
     public bool drawPath = false;
 
     Path path;
+    int pathIndex = 0;
     //int targetIndex;
 
     PathRequest pathingRequest;
@@ -37,18 +38,20 @@ public class Unit : Owner
 
     private void Start()
     {
+        UnitSelection.AddUnit(this);
         //StartCoroutine(UpdatePath());
         //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
     }
 
     public void OnPathFound(Vector3[] waypoints, bool PathSuccessful)
     {
-        if(PathSuccessful)
+        if (PathSuccessful)
         {
             path = new Path(waypoints, transform.position, stats.turnDist, stats.stoppingDist);
+            pathIndex = 0;
 
-            StopCoroutine("FollowPath");
-            StartCoroutine("FollowPath");
+            //StopCoroutine("FollowPath");
+            //StartCoroutine("FollowPath");
         }
     }
 
@@ -86,6 +89,11 @@ public class Unit : Owner
         {
             TakeDamage(1);
         }
+
+        if (path != null)
+        {
+            MoveOnPath();
+        }
     }
 
     override public void OnRightMouse()
@@ -99,7 +107,7 @@ public class Unit : Owner
         RaycastHit hit;
         Camera cam = Camera.main;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, 512f, ValidMovementLayers))
+        if (Physics.Raycast(ray, out hit, 1024f, ValidMovementLayers))
         {
             StopCoroutine("FollowPath");
             SetMoveLocation(hit.point);
@@ -109,6 +117,58 @@ public class Unit : Owner
     public void SetMoveLocation(Vector3 target)
     {
         PathRequestManager.RequestPath(new PathRequest(transform.position, target, OnPathFound, gameObject, 1 << gameObject.layer));
+        path = null;
+    }
+
+    void MoveOnPath()
+    {
+        //Vector3 currentWaypoint = path[0];
+
+        //bool followingPath = true;
+        transform.LookAt(path.lookPoints[pathIndex]);
+
+        float speedPercent = 1f;
+
+        /*To DO:
+         * 1: Prevent units from moving past the next waypoint if they move too fast
+         * 2: Calculate turn radius, then use radius to scan area of tiles to find obstacles.
+         *      If there are obstacles, they need to stop and turn
+         *      Otherwise, find some way to check if they've turned too far and need to move to the next point
+         */
+
+        Vector2 pos2D = new Vector2(transform.position.x, transform.position.z);
+
+            
+        while ((transform.position - path.lookPoints[pathIndex]).sqrMagnitude < stats.turnDist * stats.turnDist)
+        {
+            if (pathIndex == path.finishLineIndex)
+            {
+                //followingPath = false;
+                break;
+            }
+            else
+                ++pathIndex;
+        }
+
+        if (pathIndex >= path.slowDownIndex)
+        {
+            //float dist = path.turnBoundaries[path.finishLineIndex].DistanceFromPoint(pos2D);
+            float sqrDist = (transform.position - path.lookPoints[pathIndex]).sqrMagnitude;
+            if (stats.stoppingDist > 0)
+            {
+                speedPercent = Mathf.Clamp(sqrDist / (stats.stoppingDist * stats.stoppingDist), 0.1f, 1f);
+            }
+
+            if (pathIndex == path.finishLineIndex && sqrDist <= 0.1f)
+            {
+                transform.position = path.lookPoints[pathIndex];
+                return;
+            }
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(path.lookPoints[pathIndex] - transform.position);
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * stats.turnSpeed);
+        transform.Translate(Vector3.forward * Time.deltaTime * stats.speed * speedPercent, Space.Self);
     }
 
     IEnumerator FollowPath()
@@ -210,6 +270,12 @@ public class Unit : Owner
     {
         base.SetHighlighted(IsHighlighted);
         //owner.HighlightedEffect.SetActive(IsHighlighted);
+    }
+
+    protected override void HandleDeath()
+    {
+        UnitSelection.RemoveUnit(this);
+        base.HandleDeath();
     }
 
     public void OnDrawGizmos()
