@@ -12,30 +12,18 @@ public class Grid : MonoBehaviour
     static Grid grid_Instance;
 
     public bool displayGridGizmos;
-    
+
     //public LayerMask unwalkableMask;
     public Vector2 gridWorldSize;
     public float nodeRadius;
-    public TerrainType[] walkableRegions;
-    //Tiles that aren't permanently blocked
-    public LayerMask walkableMask;
-    Dictionary<int, int> walkableRegionsDictionary = new Dictionary<int, int>();
 
-    //Tiles that are permanently blocked
-    public TerrainType[] unwalkableAreas;
-    LayerMask unwalkableMask;
-    Dictionary<int, int> unwalkableRegionsDictionary = new Dictionary<int, int>();
+    //Node[,] grid;
 
-    public LayerMask dimensions;
-
-    Node[,] grid;
-    //Key Node with count of in
-    Dictionary<Node, short> nonTerrainCorners = new Dictionary<Node, short>();
     float nodeDiameter;
     int gridSizeX, gridSizeY;
-
-    int penaltyMin = int.MaxValue;
-    int penaltyMax = int.MinValue;
+    
+    public int SectorSize = 10;
+    Sector[,,] GridSectors;
 
     public List<Node> debugPath = new List<Node>();
 
@@ -67,35 +55,114 @@ public class Grid : MonoBehaviour
             view = dim3;
     }
 
-    public void ModifyBlockage(LayerMask dimension, bool isWalkable, Vector3 bottomLeft, Vector3 topRight)
+    bool GetWalkableAt(LayerMask dimension, int xCoord, int yCoord)
     {
-        Node bl = NodeFromWorldPoint(bottomLeft);
+        char dim;
 
-        Node tr = NodeFromWorldPoint(topRight);
-
-        char walkableBool = (char)0;
-        
         if (dimension == dim1)
         {
-            walkableBool = (char)1;
+            dim = (char)0;
         }
-        else if(dimension == dim2)
+        else if (dimension == dim2)
         {
-            walkableBool = (char)2;
+            dim = (char)1;
         }
         else if (dimension == dim3)
         {
-            walkableBool = (char)3;
+            dim = (char)2;
+        }
+        else
+        {
+            throw new InvalidDimensionException(dimension);
         }
 
-        for (int y = bl.gridY; y <= tr.gridY; ++y)
+        return GetWalkableAt(dim, xCoord, yCoord);
+    }
+
+    bool GetWalkableAt(char dim, int xCoord, int yCoord)
+    {
+        if (dim > 2 || dim < 0)
+            throw new InvalidDimensionException(dim);
+
+        return GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].GetWalkableAt(xCoord % SectorSize, yCoord % SectorSize);
+    }
+
+    void SetWalkableAt(LayerMask dimension, int xCoord, int yCoord, bool newCanWalk)
+    {
+        char dim;
+
+        if (dimension == dim1)
         {
-            for (int x = bl.gridX; x <= tr.gridX; ++x)
+            dim = (char)0;
+        }
+        else if (dimension == dim2)
+        {
+            dim = (char)1;
+        }
+        else if (dimension == dim3)
+        {
+            dim = (char)2;
+        }
+        else
+        {
+            throw new InvalidDimensionException(dimension);
+        }
+
+        SetWalkableAt(dim, xCoord, yCoord, newCanWalk);
+    }
+
+    void SetWalkableAt(char dim, int xCoord, int yCoord, bool newCanWalk)
+    {
+        if (dim > 2 || dim < 0)
+            throw new InvalidDimensionException(dim);
+
+        if (dim == 2)
+        {
+            for (char d = (char)0; d < (char)3; ++d)
+                GridSectors[d, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+        }
+        else if (dim == 0)
+        {
+            GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+            if (GetWalkableAt((char)1, xCoord, yCoord))
+                GridSectors[(char)2, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+        }
+        else if (dim == 1)
+        {
+            GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+            if (GetWalkableAt((char)0, xCoord, yCoord))
+                GridSectors[(char)2, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+        }
+    }
+
+    public void ModifyBlockage(LayerMask dimension, bool isWalkable, Vector3 bottomLeft, Vector3 topRight)
+    {
+        int xBL, yBL;
+        NodeFromWorldPoint(bottomLeft, out xBL, out yBL);
+
+        int xTR, yTR;
+        NodeFromWorldPoint(topRight, out xTR, out yTR);
+
+        //char walkableBool = (char)0;
+        //
+        //if (dimension == dim1)
+        //{
+        //    walkableBool = (char)1;
+        //}
+        //else if(dimension == dim2)
+        //{
+        //    walkableBool = (char)2;
+        //}
+        //else if (dimension == dim3)
+        //{
+        //    walkableBool = (char)3;
+        //}
+
+        for (int y = yBL; y <= yTR; ++y)
+        {
+            for (int x = xBL; x <= xTR; ++x)
             {
-                if(isWalkable)
-                    grid[x, y].SetWalkable((char)(grid[x, y].GetWalkable() | walkableBool));
-                else
-                    grid[x, y].SetWalkable((char)(grid[x, y].GetWalkable() & walkableBool ^ grid[x, y].GetWalkable()));
+                SetWalkableAt(dimension, x, y, isWalkable);
             }
         }
     }
@@ -109,15 +176,17 @@ public class Grid : MonoBehaviour
     /// <returns></returns>
     public bool AreaHasObstacle(LayerMask dimension, Vector3 bottomLeft, Vector3 topRight)
     {
-        Node bl = NodeFromWorldPoint(bottomLeft);
+        int xBL, yBL;
+        NodeFromWorldPoint(bottomLeft, out xBL, out yBL);
+        
+        int xTR, yTR;
+        NodeFromWorldPoint(topRight, out xTR, out yTR);
 
-        Node tr = NodeFromWorldPoint(topRight);
-
-        for (int y = bl.gridY; y <= tr.gridY; ++y)
+        for (int y = yBL; y <= yTR; ++y)
         {
-            for (int x = bl.gridX; x <= tr.gridX; ++x)
+            for (int x = xBL; x <= xTR; ++x)
             {
-                if (!grid[x, y].GetWalkableByDimension(dimension))
+                if(!GetWalkableAt(dimension, x, y))
                     return true;
             }
         }
@@ -132,188 +201,96 @@ public class Grid : MonoBehaviour
 
     void CreateGrid()
     {
-        grid = new Node[gridSizeX, gridSizeY];
-        Vector3 worldBottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2 - Vector3.forward * gridWorldSize.y / 2;
+        GridSectors = new Sector[3, gridSizeX / SectorSize, gridSizeY / SectorSize];
 
-        for (int x = 0; x < gridSizeX; ++x)
-        {
-            for(int y = 0; y < gridSizeY; ++y)
-            {
-                Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.forward * (y * nodeDiameter + nodeRadius);
-
-                char walkable = (char)3;
-
-                Ray ray = new Ray(worldPoint + Vector3.up * 50, Vector3.down);
-                
-                RaycastHit[] hits = Physics.RaycastAll(ray, 100, dim1);
-                foreach (RaycastHit h in hits)
-                {
-                    if (h.transform.gameObject.tag == "Unit")
-                        continue;
-                        
-                    walkable ^= (char)1;
-                    break;
-                }
-                
-                hits = Physics.RaycastAll(ray, 100, dim2);
-                foreach (RaycastHit h in hits)
-                {
-                    if (h.transform.gameObject.tag == "Unit")
-                        continue;
-
-                    walkable ^= (char)2;
-                    break;
-                }
-
-                hits = Physics.RaycastAll(ray, 100, dim3);
-                foreach (RaycastHit h in hits)
-                {
-                    if (h.transform.gameObject.tag == "Unit")
-                        continue;
-
-                    walkable = (char)0;
-                    break;
-                }
-
-                grid[x, y] = new Node(walkable, worldPoint, x, y);
-            }
-        }
-
-        //BlurPenaltyMap(3);
+        GenerateSectors(dim1);
+        GenerateSectors(dim2);
+        GenerateSectors(dim3);
     }
 
-    public List<Node> GetNeighbors(LayerMask dimension, Node node)
+    void GenerateSectors(LayerMask mask)
     {
-        List<Node> neighbors = new List<Node>();
-
-        bool top = false;
-        bool bottom = false;
-        bool left = false;
-        bool right = false;
-
-        Node n;
-
-        if (node.gridX > 0)
+        for (int x = 0; x < gridSizeX / SectorSize; ++x)
         {
-            n = grid[node.gridX - 1, node.gridY];
-            if (n.GetWalkableByDimension(dimension))
+            for (int y = 0; y < gridSizeY / SectorSize; ++y)
             {
-                left = true;
-                neighbors.Add(n);
+                Vector3 worldPoint = transform.position + Vector3.right * ((x * SectorSize) * nodeDiameter + nodeRadius) + Vector3.forward * ((y * SectorSize) * nodeDiameter + nodeRadius);
+
+                GridSectors[(int)Mathf.Log(mask, 2) - 8, x, y] = new Sector(mask,
+                                                  (int)(x * SectorSize <= gridWorldSize.x ? SectorSize : x * SectorSize - gridWorldSize.x),
+                                                  (int)(y * SectorSize <= gridWorldSize.y ? SectorSize : y * SectorSize - gridWorldSize.y),
+                                                  worldPoint,
+                                                  nodeRadius);
             }
         }
-        if (node.gridY > 0)
-        {
-            n = grid[node.gridX, node.gridY - 1];
-            if (n.GetWalkableByDimension(dimension))
-            {
-                bottom = true;
-                neighbors.Add(n);
-            }
-        }
-        if (node.gridX < gridSizeX - 1)
-        {
-            n = grid[node.gridX + 1, node.gridY];
-            if (n.GetWalkableByDimension(dimension))
-            {
-                right = true;
-                neighbors.Add(n);
-            }
-        }
-        if (node.gridY < gridSizeY - 1)
-        {
-            n = grid[node.gridX, node.gridY + 1];
-            if (n.GetWalkableByDimension(dimension))
-            {
-                top = true;
-                neighbors.Add(n);
-            }
-        }
-
-        if(left && bottom)
-        {
-            n = grid[node.gridX - 1, node.gridY - 1];
-            if (n.GetWalkableByDimension(dimension))
-                neighbors.Add(n);
-        }
-        if (left && top)
-        {
-            n = grid[node.gridX - 1, node.gridY + 1];
-            if (n.GetWalkableByDimension(dimension))
-                neighbors.Add(n);
-        }
-        if (right && bottom)
-        {
-            n = grid[node.gridX + 1, node.gridY - 1];
-            if (n.GetWalkableByDimension(dimension))
-                neighbors.Add(n);
-        }
-        if (right && top)
-        {
-            n = grid[node.gridX + 1, node.gridY + 1];
-            if (n.GetWalkableByDimension(dimension))
-                neighbors.Add(n);
-        }
-
-        //for (int x = -1; x <= 1; ++x)
-        //{
-        //    for (int y = -1; y <= 1; ++y)
-        //    {
-        //        if (x == 0 && y == 0)
-        //            continue;
-        //
-        //        int checkX = node.gridX + x;
-        //        int checkY = node.gridY + y;
-        //
-        //        if()
-        //
-        //        if (checkX >= 0 && checkX < gridSizeX && checkY >= 0 && checkY < gridSizeY)
-        //        {
-        //            neighbors.Add(grid[checkX, checkY]);
-        //        }
-        //    }
-        //}
-
-        return neighbors;
     }
 
-    public Node NodeFromWorldPoint(Vector3 worldPosition)
+    public void NodeFromWorldPoint(Vector3 worldPosition, out int xPos, out int yPos)
     {
-        float percentX = (worldPosition.x + gridWorldSize.x / 2) / gridWorldSize.x;
-        float percentY = (worldPosition.z + gridWorldSize.y / 2) / gridWorldSize.y;
+        float percentX = worldPosition.x / gridWorldSize.x;
+        float percentY = worldPosition.z / gridWorldSize.y;
         percentX = Mathf.Clamp01(percentX);
         percentY = Mathf.Clamp01(percentY);
 
         int x = Mathf.RoundToInt((gridSizeX - 1) * percentX);
         int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
 
-        return grid[x, y];
+        xPos = (int)(x / nodeDiameter);
+        yPos = (int)(y / nodeDiameter);
+
+        return;// grid[x, y];
     }
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1, gridWorldSize.y));
+        Gizmos.DrawWireCube(transform.position + new Vector3(gridWorldSize.x / 2, 0, gridWorldSize.y / 2), new Vector3(gridWorldSize.x, 1, gridWorldSize.y));
 
-        if (grid != null && displayGridGizmos)
+        if (GridSectors != null && displayGridGizmos)
         {
-            foreach (Node n in grid)
+            int dimSector = (int)Mathf.Log(view, 2) - 8;
+
+            for (int x = 0; x < gridSizeX; ++x)
             {
-                Gizmos.color = Color.white;//Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(penaltyMin, penaltyMax, n.movementPenalty));
-
-                Gizmos.color = (n.GetWalkableByDimension(view) ? Gizmos.color : Color.red);
-
-                if (Gizmos.color == Color.white && nonTerrainCorners.ContainsKey(n))
+                for (int y = 0; y < gridSizeY; ++y)
                 {
-                    Gizmos.color = Color.blue;
-                }
-                else if (Gizmos.color == Color.red && nonTerrainCorners.ContainsKey(n))
-                {
-                    Gizmos.color = (Color.red + Color.blue) / 2;
-                }
+                    if (view == dim1)
+                    {
+                        if (GetWalkableAt(dim1, x, y))
+                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+                        else
+                            Gizmos.color = Color.black;
+                    }
+                    else if (view == dim2)
+                    {
+                        if (GetWalkableAt(dim2, x, y))
+                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+                        else
+                            Gizmos.color = Color.black;
+                    }
+                    else if (view == dim3)
+                    {
+                        if (GetWalkableAt(dim1, x, y) && GetWalkableAt(dim2, x, y) && GetWalkableAt(dim3, x, y))
+                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+                        else
+                            Gizmos.color = Color.black;
+                    }
 
-                //if (!n.walkable 
-                    Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter));
+                    Gizmos.DrawCube(Vector3.right * (x * (nodeRadius * 2) + nodeRadius) + Vector3.forward * (y * (nodeRadius * 2) + nodeRadius), Vector3.one * (nodeDiameter));
+                }
             }
+
+            //foreach (Node n in grid)
+            //{
+            //    Gizmos.color = Color.white;//Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(penaltyMin, penaltyMax, n.movementPenalty));
+            //
+            //    Gizmos.color = (n.GetWalkableByDimension(view) ? Gizmos.color : Color.black);
+            //
+            //
+            //
+            //
+            //    //if (!n.walkable 
+            //        Gizmos.DrawCube(n.worldPosition, Vector3.one * (nodeDiameter));
+            //}
         }
 
         if (debugPath.Count > 0)
@@ -332,5 +309,18 @@ public class Grid : MonoBehaviour
     {
         public string[] terrainMask;
         public int TerrainPenalty;
+    }
+}
+
+[System.Serializable]
+class InvalidDimensionException : System.Exception
+{
+    public InvalidDimensionException() : base(string.Format("Invalid Dimension Given"))
+    {
+    }
+
+    public InvalidDimensionException(int dimension) : base(string.Format("Invalid Dimension Given: Dimension {0}", dimension))
+    {
+
     }
 }
