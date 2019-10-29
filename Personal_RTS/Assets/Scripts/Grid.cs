@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
+    public static Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
+
     public static Grid GetGrid
     {
         get { return grid_Instance; }
@@ -12,15 +14,21 @@ public class Grid : MonoBehaviour
     static Grid grid_Instance;
 
     public bool displayGridGizmos;
+    public bool slowDebug;
+    public int DebugXSector, DebugYSector;
+    public LayerMask DebugClickLocation;
 
     //public LayerMask unwalkableMask;
     public Vector2 gridWorldSize;
     public float nodeRadius;
+    float prevNodeRadius;
 
     //Node[,] grid;
 
     float nodeDiameter;
     int gridSizeX, gridSizeY;
+    int xSectorCount, ySectorCount;
+    int nodesPerSector;
     
     public int SectorSize = 10;
     Sector[,,] GridSectors;
@@ -35,14 +43,7 @@ public class Grid : MonoBehaviour
 
     private void Awake()
     {
-        grid_Instance = this;
-
-        nodeDiameter = nodeRadius * 2f;
-        gridSizeX = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
-        gridSizeY = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
-
-        CreateGrid();
-        view = dim1;
+        Initialize();
     }
 
     public void Update()
@@ -53,6 +54,47 @@ public class Grid : MonoBehaviour
             view = dim2;
         if (Input.GetKeyDown(KeyCode.Alpha3))
             view = dim3;
+
+        if (displayGridGizmos && Input.GetMouseButtonDown(0))
+        {
+            Vector3 mousePos = Input.mousePosition;
+
+            RaycastHit hit;
+            Camera cam = Camera.main;
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hit, 1024f, DebugClickLocation))
+            {
+                int x, y;
+                NodeFromWorldPoint(hit.point, out x, out y);
+                bool walkable = GetWalkableAt(view, x, y);
+
+                Debug.Log(string.Format("The node at location X,Y: {0},{1} is {2}", x, y, walkable ? "Walkable" : "Not Walkable"));
+
+                DebugXSector = CoordToSectorNumber(x);
+                DebugYSector = CoordToSectorNumber(y);
+            }
+        }
+
+        if (prevNodeRadius != nodeRadius)
+        {
+            Initialize();
+        }
+    }
+
+    private void Initialize()
+    {
+        {
+            grid_Instance = this;
+
+            nodeDiameter = nodeRadius * 2f;
+            nodesPerSector = Mathf.RoundToInt(SectorSize / nodeDiameter);
+            gridSizeX = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
+            gridSizeY = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
+
+            CreateGrid();
+            prevNodeRadius = nodeRadius;
+            view = dim1;
+        }
     }
 
     bool GetWalkableAt(LayerMask dimension, int xCoord, int yCoord)
@@ -84,7 +126,7 @@ public class Grid : MonoBehaviour
         if (dim > 2 || dim < 0)
             throw new InvalidDimensionException(dim);
 
-        return GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].GetWalkableAt(xCoord % SectorSize, yCoord % SectorSize);
+        return GridSectors[dim, CoordToSectorNumber(xCoord), CoordToSectorNumber(yCoord)].GetWalkableAt(xCoord % (nodesPerSector), yCoord % (nodesPerSector));
     }
 
     void SetWalkableAt(LayerMask dimension, int xCoord, int yCoord, bool newCanWalk)
@@ -116,22 +158,35 @@ public class Grid : MonoBehaviour
         if (dim > 2 || dim < 0)
             throw new InvalidDimensionException(dim);
 
-        if (dim == 2)
+        
+        if (dim == 0)
         {
-            for (char d = (char)0; d < (char)3; ++d)
-                GridSectors[d, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
-        }
-        else if (dim == 0)
-        {
-            GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
             if (GetWalkableAt((char)1, xCoord, yCoord))
-                GridSectors[(char)2, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+                AssignWalkable((char)2, xCoord, yCoord, newCanWalk);
         }
         else if (dim == 1)
         {
-            GridSectors[dim, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
             if (GetWalkableAt((char)0, xCoord, yCoord))
-                GridSectors[(char)2, xCoord / SectorSize, yCoord / SectorSize].SetWalkableAt(xCoord % SectorSize, yCoord % SectorSize, newCanWalk);
+                AssignWalkable((char)2, xCoord, yCoord, newCanWalk);
+        }
+        else if (dim == 2)
+        {
+            for (char d = (char)0; d < (char)2; ++d)
+                AssignWalkable(d, xCoord, yCoord, newCanWalk);
+        }
+        AssignWalkable(dim, xCoord, yCoord, newCanWalk);
+    }
+
+    void AssignWalkable(char dim, int x, int y, bool newCanWalk)
+    {
+        try
+        {
+            GridSectors[dim, CoordToSectorNumber(x), CoordToSectorNumber(y)].SetWalkableAt(x % nodesPerSector, y % nodesPerSector, newCanWalk);
+        }
+        catch (System.IndexOutOfRangeException)
+        {
+            Debug.Log(string.Format("Dim: {0}, X: {1}, Y: {2}, Sector X: {3}, Sector Y: {4}, Adjusted X: {5}, Adjusted Y: {6}", (int)dim, x, y, CoordToSectorNumber(x), CoordToSectorNumber(y), x % nodesPerSector, y % nodesPerSector));
+            throw new InvalidDimensionException();
         }
     }
 
@@ -158,13 +213,40 @@ public class Grid : MonoBehaviour
         //    walkableBool = (char)3;
         //}
 
-        for (int y = yBL; y <= yTR; ++y)
+        for (int x = xBL; x <= xTR; ++x)
         {
-            for (int x = xBL; x <= xTR; ++x)
+            for (int y = yBL; y <= yTR; ++y)
             {
                 SetWalkableAt(dimension, x, y, isWalkable);
             }
         }
+
+        for (int x = CoordToSectorNumber(xBL); x <= CoordToSectorNumber(xTR); ++x)
+        {
+            for (int y = CoordToSectorNumber(yBL); y <= CoordToSectorNumber(yTR); ++y)
+            {
+                if(dimension == dim3)
+                {
+                    GridSectors[0, x, y].UpdateSubsectors();
+                    GridSectors[1, x, y].UpdateSubsectors();
+                }
+                else if (dimension == dim1)
+                {
+                    GridSectors[0, x, y].UpdateSubsectors();
+                }
+                else if (dimension == dim2)
+                {
+                    GridSectors[1, x, y].UpdateSubsectors();
+                }
+                GridSectors[2, x, y].UpdateSubsectors();
+                //GridSectors[(int)Mathf.Log(dimension, 2) - 8, x, y].UpdateSubsectors();
+            }
+        }
+    }
+
+    int CoordToSectorNumber(int n)
+    {
+        return (int)Mathf.RoundToInt(n / nodesPerSector);
     }
 
     /// <summary>
@@ -201,26 +283,40 @@ public class Grid : MonoBehaviour
 
     void CreateGrid()
     {
-        GridSectors = new Sector[3, gridSizeX / SectorSize, gridSizeY / SectorSize];
+        xSectorCount = ((int)gridWorldSize.x - 1) / SectorSize + 1;
+        ySectorCount = ((int)gridWorldSize.y - 1) / SectorSize + 1;
 
+        GridSectors = new Sector[3, xSectorCount, ySectorCount];
+
+        System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+        timer.Start();
         GenerateSectors(dim1);
+        Debug.Log(string.Format("Generated Dimension 1 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
+        timer.Reset();
+        timer.Start();
         GenerateSectors(dim2);
+        Debug.Log(string.Format("Generated Dimension 2 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
+        timer.Reset();
+        timer.Start();
         GenerateSectors(dim3);
+        Debug.Log(string.Format("Generated Dimension 3 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
+        timer.Stop();
     }
 
     void GenerateSectors(LayerMask mask)
     {
-        for (int x = 0; x < gridSizeX / SectorSize; ++x)
+        Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
+        for (int x = 0; x < ((int)gridWorldSize.x - 1) / SectorSize + 1; ++x)
         {
-            for (int y = 0; y < gridSizeY / SectorSize; ++y)
+            for (int y = 0; y < ((int)gridWorldSize.y - 1)/ SectorSize + 1; ++y)
             {
-                Vector3 worldPoint = transform.position + Vector3.right * ((x * SectorSize) * nodeDiameter + nodeRadius) + Vector3.forward * ((y * SectorSize) * nodeDiameter + nodeRadius);
+                Vector3 worldPoint = transform.position + Vector3.right * ((x * SectorSize) + nodeRadius) + Vector3.forward * ((y * SectorSize) + nodeRadius);
 
                 GridSectors[(int)Mathf.Log(mask, 2) - 8, x, y] = new Sector(mask,
-                                                  (int)(x * SectorSize <= gridWorldSize.x ? SectorSize : x * SectorSize - gridWorldSize.x),
-                                                  (int)(y * SectorSize <= gridWorldSize.y ? SectorSize : y * SectorSize - gridWorldSize.y),
+                                                  (int)((x + 1) * SectorSize <= gridWorldSize.x ? SectorSize : gridWorldSize.x % SectorSize),
+                                                  (int)((y + 1) * SectorSize <= gridWorldSize.y ? SectorSize : gridWorldSize.y % SectorSize),
                                                   worldPoint,
-                                                  nodeRadius);
+                                                  nodeDiameter);
             }
         }
     }
@@ -235,8 +331,8 @@ public class Grid : MonoBehaviour
         int x = Mathf.RoundToInt((gridSizeX - 1) * percentX);
         int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
 
-        xPos = (int)(x / nodeDiameter);
-        yPos = (int)(y / nodeDiameter);
+        xPos = x;//(int)(x / nodeDiameter);
+        yPos = y;//(int)(y / nodeDiameter);
 
         return;// grid[x, y];
     }
@@ -249,35 +345,69 @@ public class Grid : MonoBehaviour
         {
             int dimSector = (int)Mathf.Log(view, 2) - 8;
 
-            for (int x = 0; x < gridSizeX; ++x)
+            if (slowDebug)
             {
-                for (int y = 0; y < gridSizeY; ++y)
+                Sector s = GridSectors[dimSector, DebugXSector, DebugYSector];
+                for (int x = 0; x < nodesPerSector; ++x)
                 {
-                    if (view == dim1)
+                    for (int y = 0; y < nodesPerSector; ++y)
                     {
-                        if (GetWalkableAt(dim1, x, y))
-                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
-                        else
-                            Gizmos.color = Color.black;
+                        if (GetWalkableAt((char)dimSector, (x + DebugXSector * nodesPerSector), (y + DebugYSector * nodesPerSector)))
+                        {
+                            Gizmos.color = s.sectorColor;
+                            Vector3 v = Vector3.right * x * nodeDiameter + Vector3.forward * y * nodeDiameter + Vector3.up;
+                            v += Vector3.right * DebugXSector * SectorSize + Vector3.forward * DebugYSector * SectorSize;
+                            Gizmos.DrawCube(v, Vector3.one * nodeDiameter);
+                        }
                     }
-                    else if (view == dim2)
-                    {
-                        if (GetWalkableAt(dim2, x, y))
-                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
-                        else
-                            Gizmos.color = Color.black;
-                    }
-                    else if (view == dim3)
-                    {
-                        if (GetWalkableAt(dim1, x, y) && GetWalkableAt(dim2, x, y) && GetWalkableAt(dim3, x, y))
-                            Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
-                        else
-                            Gizmos.color = Color.black;
-                    }
-
-                    Gizmos.DrawCube(Vector3.right * (x * (nodeRadius * 2) + nodeRadius) + Vector3.forward * (y * (nodeRadius * 2) + nodeRadius), Vector3.one * (nodeDiameter));
                 }
             }
+            else
+                for (int x = 0; x < ((int)gridWorldSize.x - 1) / SectorSize + 1; ++x)
+                {
+                    for (int y = 0; y < ((int)gridWorldSize.y - 1) / SectorSize + 1; ++y)
+                    {
+                        foreach (Sector.SubSector s in GridSectors[dimSector, x, y].subs)
+                        {
+                            Gizmos.color = s.subSectorColor;
+                            try
+                            {
+                                Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
+
+            //for (int x = 0; x < gridSizeX; ++x)
+            //{
+            //    for (int y = 0; y < gridSizeY; ++y)
+            //    {
+            //        if (view == dim1)
+            //        {
+            //            if (GetWalkableAt(dim1, x, y))
+            //                Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+            //            else
+            //                Gizmos.color = Color.black;
+            //        }
+            //        else if (view == dim2)
+            //        {
+            //            if (GetWalkableAt(dim2, x, y))
+            //                Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+            //            else
+            //                Gizmos.color = Color.black;
+            //        }
+            //        else if (view == dim3)
+            //        {
+            //            if (GetWalkableAt(dim1, x, y) && GetWalkableAt(dim2, x, y) && GetWalkableAt(dim3, x, y))
+            //                Gizmos.color = GridSectors[dimSector, x / SectorSize, y / SectorSize].sectorColor;
+            //            else
+            //                Gizmos.color = Color.black;
+            //        }
+            //
+            //        Gizmos.DrawCube(Vector3.right * (x * (nodeRadius * 2) + nodeRadius) + Vector3.forward * (y * (nodeRadius * 2) + nodeRadius), Vector3.one * (nodeDiameter));
+            //    }
+            //}
 
             //foreach (Node n in grid)
             //{
@@ -293,15 +423,15 @@ public class Grid : MonoBehaviour
             //}
         }
 
-        if (debugPath.Count > 0)
-        {
-            Gizmos.color = Color.magenta;
-
-            foreach (Node n in debugPath)
-            {
-                Gizmos.DrawCube(n.worldPosition, Vector3.one * nodeDiameter);
-            }
-        }
+        //if (debugPath.Count > 0)
+        //{
+        //    Gizmos.color = Color.magenta;
+        //
+        //    foreach (Node n in debugPath)
+        //    {
+        //        Gizmos.DrawCube(n.worldPosition, Vector3.one * nodeDiameter);
+        //    }
+        //}
     }
 
     [System.Serializable]
