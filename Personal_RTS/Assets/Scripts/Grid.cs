@@ -192,6 +192,9 @@ public class Grid : MonoBehaviour
 
     public void ModifyBlockage(LayerMask dimension, bool isWalkable, Vector3 bottomLeft, Vector3 topRight)
     {
+        System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+        timer.Start();
+
         int xBL, yBL;
         NodeFromWorldPoint(bottomLeft, out xBL, out yBL);
 
@@ -242,6 +245,8 @@ public class Grid : MonoBehaviour
                 //GridSectors[(int)Mathf.Log(dimension, 2) - 8, x, y].UpdateSubsectors();
             }
         }
+
+        Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
     }
 
     int CoordToSectorNumber(int n)
@@ -298,7 +303,7 @@ public class Grid : MonoBehaviour
         Debug.Log(string.Format("Generated Dimension 2 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
         timer.Reset();
         timer.Start();
-        GenerateSectors(dim3);
+        GenerateSectors(dim3 ^ dim2 ^ dim1);
         Debug.Log(string.Format("Generated Dimension 3 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
         timer.Stop();
     }
@@ -355,7 +360,7 @@ public class Grid : MonoBehaviour
                         if (GetWalkableAt((char)dimSector, (x + DebugXSector * nodesPerSector), (y + DebugYSector * nodesPerSector)))
                         {
                             Gizmos.color = s.sectorColor;
-                            Vector3 v = Vector3.right * x * nodeDiameter + Vector3.forward * y * nodeDiameter + Vector3.up;
+                            Vector3 v = Vector3.right * x * nodeDiameter + Vector3.forward * y * nodeDiameter + Vector3.right * nodeRadius + Vector3.forward * nodeRadius;
                             v += Vector3.right * DebugXSector * SectorSize + Vector3.forward * DebugYSector * SectorSize;
                             Gizmos.DrawCube(v, Vector3.one * nodeDiameter);
                         }
@@ -372,7 +377,7 @@ public class Grid : MonoBehaviour
                             Gizmos.color = s.subSectorColor;
                             try
                             {
-                                Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
+                                Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up * 0.001f, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
                             }
                             catch { continue; }
                         }
@@ -452,5 +457,13 @@ class InvalidDimensionException : System.Exception
     public InvalidDimensionException(int dimension) : base(string.Format("Invalid Dimension Given: Dimension {0}", dimension))
     {
 
+    }
+}
+
+[System.Serializable]
+class SubsectorMeshException : System.Exception
+{
+    public SubsectorMeshException() : base(string.Format("Unable to find subsector bounds"))
+    {
     }
 }
