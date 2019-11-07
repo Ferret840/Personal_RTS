@@ -57,7 +57,7 @@ public class Sector
                     walkable = false;
                     break;
                 }
-                if (walkable/*grid[x, y].isWalkable*/ && (dim == 1 << 8 || dim == 1 << 9))
+                if (walkable/*grid[x, y].isWalkable*/ && (dim != 1 << 8 || dim == 1 << 9))
                 {
                     hits = Physics.RaycastAll(ray, 100, 1 << 10);
                     foreach (RaycastHit h in hits)
@@ -87,16 +87,92 @@ public class Sector
         timer.Start();
 
         subs = new List<SubSector>();
-        subs.Add(new SubSector(this));
+
+        HashSet<Node> touchedNodes = new HashSet<Node>();
+        Stack<NodeWithCoord> neighborGettorList = new Stack<NodeWithCoord>();
 
         for (int x = 0; x < xSize; ++x)
         {
             for (int y = 0; y < ySize; ++y)
             {
-                if (grid[x,y] != null)//grid[x, y].isWalkable)
-                    subs[0].AddNodeToSub(grid[x, y]);
+                Node n = grid[x, y];
+                if (n != null && !touchedNodes.Contains(n))
+                {
+                    SubSector s = new SubSector(this);
+                    subs.Add(s);
+
+                    //neighborGettorList.Add(new NodeWithCoord(n, x, y));
+                    neighborGettorList.Push(new NodeWithCoord(n, x, y));
+
+                    while (neighborGettorList.Count > 0)
+                    {
+                        NodeWithCoord nodeCoord = neighborGettorList.Pop();//[neighborGettorList.Count - 1];
+                        touchedNodes.Add(nodeCoord.node);
+                        s.AddNodeToSub(nodeCoord.node);
+
+                        Node neighbor;
+                        int nextX = nodeCoord.x - 1;
+                        int nextY = nodeCoord.y;
+
+                        //Get each of the 4 neighbors (a + shape)
+                        if (nextX >= 0)
+                        {
+                            neighbor = grid[nextX, nextY];
+                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            {
+                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                touchedNodes.Add(neighbor);
+                            }
+                        }
+
+                        nextX += 2;
+                        if (nextX < xSize)
+                        {
+                            neighbor = grid[nextX, nextY];
+                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            {
+                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                touchedNodes.Add(neighbor);
+                            }
+                        }
+
+                        --nextX;
+                        --nextY;
+                        if (nextY >= 0)
+                        {
+                            neighbor = grid[nextX, nextY];
+                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            {
+                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                touchedNodes.Add(neighbor);
+                            }
+                        }
+
+                        nextY += 2;
+                        if (nextY < ySize)
+                        {
+                            neighbor = grid[nextX, nextY];
+                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            {
+                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                touchedNodes.Add(neighbor);
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        //subs.Add(new SubSector(this));
+        //
+        //for (int x = 0; x < xSize; ++x)
+        //{
+        //    for (int y = 0; y < ySize; ++y)
+        //    {
+        //        if (grid[x,y] != null)//grid[x, y].isWalkable)
+        //            subs[0].AddNodeToSub(grid[x, y]);
+        //    }
+        //}
 
         foreach(SubSector s in subs)
             s.GenerateMesh();
@@ -151,8 +227,8 @@ public class Sector
         {
             sect = parentSector;
 
-            Color c = Random.ColorHSV();
-            c.a = 0.5f;
+            Color c = Random.ColorHSV(0.2f, 0.8f, 0.1f, 0.5f, 0.5f, 1f);
+            //c.a = 0.5f;
             subSectorColor = c;
         }
 
@@ -196,10 +272,34 @@ public class Sector
                 return;
             }
 
-            verts.Add(new Vector2(x + 0.5f, y + 0.5f));
-            CheckNext(x, y, 1, 1);
-            verts = RemoveRedundantVerts(verts);
+            try
+            {
+                verts.Add(new Vector2(x, y));
+                CheckNext(x, y, 1, 1, false);
+                verts = RemoveRedundantVerts(verts);
+
+                CalcMesh();
+            }
+            catch (SubsectorMeshException e)
+            {
+                verts.Clear();
+                verts.Add(Vector2.zero);
+                verts.Add(new Vector2(0, sect.ySize));
+                verts.Add(new Vector2(sect.xSize, sect.ySize));
+                verts.Add(new Vector2(sect.xSize, 0));
+
+                CalcMesh();
+
+                Debug.Log(e.Message);
+
+                subSectorColor = Color.red;
+            }
             
+            verts = null;
+        }
+
+        void CalcMesh()
+        {
             Triangulator tr = new Triangulator(verts);
             int[] indices = tr.Triangulate();
 
@@ -214,24 +314,40 @@ public class Sector
             mesh.triangles = indices;
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            
-            verts = null;
+
+            if (mesh.normals[0] == Vector3.zero)
+            {
+                ReverseNormals();
+            }
         }
 
         List<Vector2> RemoveRedundantVerts(List<Vector2> verts)
         {
             for (int x = 1; x < verts.Count - 1; ++x)
             {
-                while (x < verts.Count - 1 &&
-                        ((verts[x - 1].x == verts[x].x && verts[x].x == verts[x + 1].x) ||
-                         (verts[x - 1].y == verts[x].y && verts[x].y == verts[x + 1].y))   )
+                while (x < verts.Count - 1)
                 {
-                    verts.RemoveAt(x);
+                    if (Mathf.Abs(verts[x].x - verts[x + 1].x) == 1f && Mathf.Abs(verts[x].y - verts[x + 1].y) == 1f)
+                        verts.RemoveAt(x);
+                    else
+                        break;
                 }
             }
-            if (verts.Count >= 3 &&
-                ((verts[0].x == verts[verts.Count - 1].x && verts[verts.Count - 1].x == verts[verts.Count - 2].x) ||
-                (verts[0].x == verts[verts.Count - 1].y && verts[verts.Count - 1].y == verts[verts.Count - 2].y))    )
+            for (int x = 1; x < verts.Count - 1; ++x)
+            {
+                while (x < verts.Count - 1)
+                {
+                    if ((verts[x - 1].x == verts[x].x && verts[x].x == verts[x + 1].x) ||
+                        (verts[x - 1].y == verts[x].y && verts[x].y == verts[x + 1].y))
+                        verts.RemoveAt(x);
+                    else
+                        break;
+                }
+            }
+            //if (verts.Count >= 3 &&
+            //    ((verts[0].x == verts[verts.Count - 1].x && verts[verts.Count - 1].x == verts[verts.Count - 2].x) ||
+            //     (verts[0].x == verts[verts.Count - 1].y && verts[verts.Count - 1].y == verts[verts.Count - 2].y))    )
+            if(verts[0] == verts[verts.Count-1])
             {
                 verts.RemoveAt(verts.Count - 1);
             }
@@ -240,26 +356,40 @@ public class Sector
         }
 
         //Extreme logic
-        void CheckNext(int x, int y, int xN, int yM)
+        void CheckNext(int x, int y, int xN, int yM, bool success)
         {
+            System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+            timer.Start();
+            //In the case of a single node, ensure it doesn't loop forever in the same spot
             int sameLimit = 0;
             while (sameLimit < 4)
             {
+                //if (timer.ElapsedMilliseconds > 1500)
+                //    throw new SubsectorMeshException();
+
                 int nextX = x + xN, nextY = y + yM;
+                
+                Vector2 nextVert = new Vector2(nextX, nextY) + new Vector2(0.5f * -yM, 0.5f * xN) + Vector2.one * 0.5f;
+                Vector2 nextVertNext = new Vector2(nextX, nextY) + new Vector2(0.5f * xN, 0.5f * yM) + Vector2.one * 0.5f;
 
                 ++sameLimit;
 
+                //Checking vertically
                 if (xN == yM)
                 {
+                    nextVert.x -= xN;
+                    nextVertNext.x -= xN;
+
                     xN = 0;
                     nextX = x;
 
-                    //Check for left and right bounds
+                    //Check for top and bottom bounds
                     if (nextY < 0)
                     {
                         xN = -1;
                         yM = 1;
                         //CheckNext(x, y, -1, 1);
+                        success = false;
                         continue;
                     }
                     else if (nextY >= sect.ySize)
@@ -267,20 +397,26 @@ public class Sector
                         xN = 1;
                         yM = -1;
                         //CheckNext(x, y, 1, -1);
+                        success = false;
                         continue;
                     }
                 }
+                //Checking horizontally
                 else
                 {
+                    nextVert.y -= yM;
+                    nextVertNext.y -= yM;
+
                     yM = 0;
                     nextY = y;
 
-                    //Check for bottom and top bounds
+                    //Check for left and right bounds
                     if (nextX < 0)
                     {
                         xN = 1;
                         yM = 1;
                         //CheckNext(x, y, 1, 1);
+                        success = false;
                         continue;
                     }
                     else if (nextX >= sect.xSize)
@@ -288,6 +424,7 @@ public class Sector
                         xN = -1;
                         yM = -1;
                         //CheckNext(x, y, -1, -1);
+                        success = false;
                         continue;
                     }
                 }
@@ -308,15 +445,30 @@ public class Sector
                     }
 
                     //Check next clockwise for this same node as origin
+                    success = false;
                     continue;
                     //CheckNext(x, y, xN, yM);
                 }
                 else
                 {
-                    Vector2 nextVert = new Vector2(nextX, nextY) + Vector2.one * 0.5f;
-                    if (verts[0] == nextVert)
+
+
+                    if (success)
+                        verts[verts.Count - 1] = (nextVert);
+                    else
+                    {
+                        verts.Add(nextVert);
+                    }
+
+                    if (verts[0] == nextVert || verts[0] == nextVertNext)
                         return;
-                    verts.Add(nextVert);
+                    else if (verts[0] == nextVertNext)
+                    {
+                    //    verts.Add(nextVertNext);
+                        return;
+                    }
+                    else
+                        verts.Add(nextVertNext);
 
                     if (xN == 0)
                     {
@@ -331,10 +483,52 @@ public class Sector
                     x = nextX;
                     y = nextY;
                     sameLimit = 0;
+                    success = true;
                     continue;
                     //CheckNext(nextX, nextY, xN, yM);
                 }
             }
+
+            if (sameLimit >= 4 && verts.Count < 4)
+            {
+                verts.Add(new Vector2(verts[0].x, verts[0].y + 1f));
+                verts.Add(new Vector2(verts[0].x + 1f, verts[0].y + 1f));
+                verts.Add(new Vector2(verts[0].x + 1f, verts[0].y));
+            }
+        }
+
+        void ReverseNormals()
+        {
+            Vector3[] normals = mesh.normals;
+            for (int i = 0; i < normals.Length; i++)
+                normals[i] = -normals[i];
+            mesh.normals = normals;
+
+            for (int m = 0; m < mesh.subMeshCount; m++)
+            {
+                int[] triangles = mesh.GetTriangles(m);
+                for (int i = 0; i < triangles.Length; i += 3)
+                {
+                    int temp = triangles[i + 0];
+                    triangles[i + 0] = triangles[i + 1];
+                    triangles[i + 1] = temp;
+                }
+                mesh.SetTriangles(triangles, m);
+            }
+        }
+    }
+
+    struct NodeWithCoord
+    {
+        public Node node;
+        public int x;
+        public int y;
+
+        public NodeWithCoord(Node n, int _x, int _y)
+        {
+            node = n;
+            x = _x;
+            y = _y;
         }
     }
 }

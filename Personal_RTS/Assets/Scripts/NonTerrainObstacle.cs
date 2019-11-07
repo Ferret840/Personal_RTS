@@ -15,6 +15,8 @@ public class NonTerrainObstacle : Owner
 
     Vector3 m_BottomLeft, m_TopRight;
 
+    bool exists;
+
     //private void Awake()
     //{
     //    Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
@@ -37,12 +39,13 @@ public class NonTerrainObstacle : Owner
         objCollider.enabled = true;
 
         GetCorners();
-        DoesBlockTerrain(true);
+        CheckForBlockedTerrain();//DoesBlockTerrain(true);
     }
     
     override protected void OnDestroy()
     {
-        DoesBlockTerrain(false);
+        if(exists)
+            DoesBlockTerrain(false);
     }
 
     protected void GetCorners()
@@ -98,7 +101,10 @@ public class NonTerrainObstacle : Owner
     {
         Grid gDimension = Grid.GetGrid;
 
-        gDimension.AreaHasObstacle(dimension, m_BottomLeft, m_TopRight);
+        if (!gDimension.AreaHasObstacle(1 << dimension, m_BottomLeft, m_TopRight))
+            DoesBlockTerrain(true);
+        else
+            Destroy(gameObject);
     }
 
     protected void DoesBlockTerrain(bool blocksTerrain)
@@ -107,6 +113,8 @@ public class NonTerrainObstacle : Owner
         Grid gDimension = Grid.GetGrid;
 
         gDimension.ModifyBlockage(1 << gameObject.layer, !blocksTerrain, m_BottomLeft, m_TopRight);
+
+        exists = blocksTerrain;
     }
 
     private void OnDrawGizmos()
