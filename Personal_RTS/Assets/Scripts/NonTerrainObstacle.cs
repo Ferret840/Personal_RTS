@@ -101,7 +101,7 @@ public class NonTerrainObstacle : Owner
     {
         Grid gDimension = Grid.GetGrid;
 
-        if (!gDimension.AreaHasObstacle(1 << dimension, m_BottomLeft, m_TopRight))
+        if (!gDimension.AreaHasObstacle((char)(dimension - 8), m_BottomLeft, m_TopRight))
             DoesBlockTerrain(true);
         else
             Destroy(gameObject);
@@ -112,7 +112,7 @@ public class NonTerrainObstacle : Owner
         //Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
         Grid gDimension = Grid.GetGrid;
 
-        gDimension.ModifyBlockage(1 << gameObject.layer, !blocksTerrain, m_BottomLeft, m_TopRight);
+        gDimension.ModifyBlockage((char)(dimension - 8), !blocksTerrain, m_BottomLeft, m_TopRight);
 
         exists = blocksTerrain;
     }

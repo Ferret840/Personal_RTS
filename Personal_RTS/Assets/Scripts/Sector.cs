@@ -4,13 +4,15 @@ using UnityEngine;
 
 public class Sector
 {
+    static uint SubsectorIdentifier = 0;
+
     public Color sectorColor
     {
         get;
         private set;
     }
 
-    //Table of node locations. 1 = Walkable, 0 = Impassable terrain
+    //Table of node locations. null = impassible, not-null = walkable
     public Node[,] grid
     {
         get;
@@ -88,18 +90,21 @@ public class Sector
 
         subs = new List<SubSector>();
 
-        HashSet<Node> touchedNodes = new HashSet<Node>();
+        //HashSet<Node> touchedNodes = new HashSet<Node>();
         Stack<NodeWithCoord> neighborGettorList = new Stack<NodeWithCoord>();
+
+        uint minNewSubsector = SubsectorIdentifier;
 
         for (int x = 0; x < xSize; ++x)
         {
             for (int y = 0; y < ySize; ++y)
             {
                 Node n = grid[x, y];
-                if (n != null && !touchedNodes.Contains(n))
+                if (n != null && (n.subsectorInstance < minNewSubsector || n.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(n))
                 {
                     SubSector s = new SubSector(this);
                     subs.Add(s);
+                    s.SubsectorIdentity = SubsectorIdentifier++;
 
                     //neighborGettorList.Add(new NodeWithCoord(n, x, y));
                     neighborGettorList.Push(new NodeWithCoord(n, x, y));
@@ -107,7 +112,7 @@ public class Sector
                     while (neighborGettorList.Count > 0)
                     {
                         NodeWithCoord nodeCoord = neighborGettorList.Pop();//[neighborGettorList.Count - 1];
-                        touchedNodes.Add(nodeCoord.node);
+                        //touchedNodes.Add(nodeCoord.node);
                         s.AddNodeToSub(nodeCoord.node);
 
                         Node neighbor;
@@ -118,10 +123,10 @@ public class Sector
                         if (nextX >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
-                                touchedNodes.Add(neighbor);
+                                //touchedNodes.Add(neighbor);
                             }
                         }
 
@@ -129,10 +134,10 @@ public class Sector
                         if (nextX < xSize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
-                                touchedNodes.Add(neighbor);
+                                //touchedNodes.Add(neighbor);
                             }
                         }
 
@@ -141,10 +146,10 @@ public class Sector
                         if (nextY >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
-                                touchedNodes.Add(neighbor);
+                                //touchedNodes.Add(neighbor);
                             }
                         }
 
@@ -152,10 +157,10 @@ public class Sector
                         if (nextY < ySize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && !touchedNodes.Contains(neighbor))
+                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
-                                touchedNodes.Add(neighbor);
+                                //touchedNodes.Add(neighbor);
                             }
                         }
                     }
@@ -199,7 +204,7 @@ public class Sector
     public class SubSector
     {
         Sector sect;
-        HashSet<Node> NodesInSubsector = new HashSet<Node>();
+        public uint SubsectorIdentity;//HashSet<Node> NodesInSubsector = new HashSet<Node>();
 
         public Mesh mesh
         {
@@ -230,25 +235,28 @@ public class Sector
             Color c = Random.ColorHSV(0.2f, 0.8f, 0.1f, 0.5f, 0.5f, 1f);
             //c.a = 0.5f;
             subSectorColor = c;
+
+            mesh = new Mesh();
         }
 
         public void AddNodeToSub(Node n)
         {
-            NodesInSubsector.Add(n);
+            n.subsectorInstance = SubsectorIdentity;
+            //NodesInSubsector.Add(n);
         }
 
         public void GenerateMesh()
         {
             verts = new List<Vector2>();
 
-            if (NodesInSubsector.Count <= 1)
-                try
-                {
-                    mesh = Resources.Load<GameObject>("CubeMesh").GetComponent<MeshFilter>().sharedMesh;
-                }
-                catch { return; }
-            else
-                mesh = new Mesh();
+            //if (NodesInSubsector.Count <= 1)
+            //    try
+            //    {
+            //        mesh = Resources.Load<GameObject>("CubeMesh").GetComponent<MeshFilter>().sharedMesh;
+            //    }
+            //    catch { return; }
+            //else
+            //    mesh = new Mesh();
 
             int x = 0, y = 0;
             bool broke = false;
@@ -256,7 +264,7 @@ public class Sector
             {
                 for (y = 0; y < sect.ySize; ++y)
                 {
-                    if (NodesInSubsector.Contains(grid[x, y]))
+                    if (grid[x, y] != null && grid[x, y].subsectorInstance == SubsectorIdentity)//NodesInSubsector.Contains(grid[x, y]))
                     {
                         broke = true;
                         break;
@@ -433,7 +441,7 @@ public class Sector
                 Node n = grid[nextX, nextY];
 
                 //If this isn't in the subsector
-                if (!NodesInSubsector.Contains(n))
+                if (n == null)// || n.subsectorInstance != SubsectorIdentity)//!NodesInSubsector.Contains(n))
                 {
                     if (xN == 0)
                     {

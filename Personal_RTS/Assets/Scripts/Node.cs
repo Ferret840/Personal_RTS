@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Node
 {
+    public uint subsectorInstance = uint.MaxValue;
     ///<summary>
     ///Always 0, 1, 2, or 3. Set bits indicate walkable in that dimension
     ///</summary>
