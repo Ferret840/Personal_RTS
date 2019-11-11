@@ -59,7 +59,7 @@ public class Sector
                     walkable = false;
                     break;
                 }
-                if (walkable/*grid[x, y].isWalkable*/ && (dim != 1 << 8 || dim == 1 << 9))
+                if (walkable/*grid[x, y].isWalkable*/ && (dim != 1 << 8 || dim != 1 << 9))
                 {
                     hits = Physics.RaycastAll(ray, 100, 1 << 10);
                     foreach (RaycastHit h in hits)
@@ -186,6 +186,14 @@ public class Sector
         timer.Stop();
     }
 
+    public void UpdateMeshes()
+    {
+        foreach (SubSector s in subs)
+        {
+            s.SetMeshValues();
+        }
+    }
+
     public bool GetWalkableAt(int x, int y)
     {
         return grid[x, y] != null;//.isWalkable;
@@ -212,7 +220,9 @@ public class Sector
             private set;
         }
 
-        List<Vector2> verts = new List<Vector2>();
+        //List<Vector3> verts = new List<Vector3>();
+        Vector3[] vertices;
+        int[] indices;
 
         Node[,] grid
         {
@@ -232,11 +242,9 @@ public class Sector
         {
             sect = parentSector;
 
-            Color c = Random.ColorHSV(0.2f, 0.8f, 0.1f, 0.5f, 0.5f, 1f);
-            //c.a = 0.5f;
-            subSectorColor = c;
-
-            mesh = new Mesh();
+            //Color c = Random.ColorHSV(0.2f, 0.8f, 0.1f, 0.5f, 0.5f, 1f);
+            ////c.a = 0.5f;
+            //subSectorColor = c;
         }
 
         public void AddNodeToSub(Node n)
@@ -247,7 +255,6 @@ public class Sector
 
         public void GenerateMesh()
         {
-            verts = new List<Vector2>();
 
             //if (NodesInSubsector.Count <= 1)
             //    try
@@ -282,42 +289,54 @@ public class Sector
 
             try
             {
-                verts.Add(new Vector2(x, y));
-                CheckNext(x, y, 1, 1, false);
+                List<Vector2> verts = CheckNext(x, y, 1, 1, false);
                 verts = RemoveRedundantVerts(verts);
 
-                CalcMesh();
+                CalcMesh(verts);
             }
             catch (SubsectorMeshException e)
             {
-                verts.Clear();
-                verts.Add(Vector2.zero);
-                verts.Add(new Vector2(0, sect.ySize));
-                verts.Add(new Vector2(sect.xSize, sect.ySize));
-                verts.Add(new Vector2(sect.xSize, 0));
-
-                CalcMesh();
-
-                Debug.Log(e.Message);
-
-                subSectorColor = Color.red;
+                //List<Vector2> verts = new List<Vector2>();
+                //verts.Add(new Vector2(x, y));
+                //verts.Clear();
+                //verts.Add(Vector2.zero);
+                //verts.Add(new Vector2(0, sect.ySize));
+                //verts.Add(new Vector2(sect.xSize, sect.ySize));
+                //verts.Add(new Vector2(sect.xSize, 0));
+                //
+                //CalcMesh(verts);
+                //
+                //Debug.Log(e.Message);
+                //
+                //subSectorColor = Color.red;
             }
             
-            verts = null;
+            //verts = null;
         }
 
-        void CalcMesh()
+        void CalcMesh(List<Vector2> verts)
         {
             Triangulator tr = new Triangulator(verts);
-            int[] indices = tr.Triangulate();
+            /*int[]*/ indices = tr.Triangulate();
 
             // Create the Vector3 vertices
-            Vector3[] vertices = new Vector3[verts.Count];
+            /*Vector3[]*/ vertices = new Vector3[verts.Count];
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = new Vector3(verts[i].x, verts[i].y, 0);
             }
+        }
 
+        public void SetMeshValues()
+        {
+            if (subSectorColor != Color.red)
+            {
+                Color c = Random.ColorHSV(0.2f, 0.8f, 0.1f, 0.5f, 0.5f, 1f);
+                //c.a = 0.5f;
+                subSectorColor = c;
+            }
+
+            mesh = new Mesh();
             mesh.vertices = vertices;
             mesh.triangles = indices;
             mesh.RecalculateNormals();
@@ -364,8 +383,11 @@ public class Sector
         }
 
         //Extreme logic
-        void CheckNext(int x, int y, int xN, int yM, bool success)
+        List<Vector2> CheckNext(int x, int y, int xN, int yM, bool success)
         {
+            List<Vector2> verts = new List<Vector2>();
+            verts.Add(new Vector2(x, y));
+
             System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
             timer.Start();
             //In the case of a single node, ensure it doesn't loop forever in the same spot
@@ -469,11 +491,11 @@ public class Sector
                     }
 
                     if (verts[0] == nextVert || verts[0] == nextVertNext)
-                        return;
+                        return verts;
                     else if (verts[0] == nextVertNext)
                     {
                     //    verts.Add(nextVertNext);
-                        return;
+                        return verts;
                     }
                     else
                         verts.Add(nextVertNext);
@@ -503,6 +525,7 @@ public class Sector
                 verts.Add(new Vector2(verts[0].x + 1f, verts[0].y + 1f));
                 verts.Add(new Vector2(verts[0].x + 1f, verts[0].y));
             }
+            return verts;
         }
 
         void ReverseNormals()
