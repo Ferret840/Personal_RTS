@@ -220,40 +220,68 @@ public class Grid : MonoBehaviour
             }
         }
 
-        //Stack<Thread> modifyThreads = new Stack<Thread>();
+        //Queue of threads along with a queue to store index of the sector being updated
+        Queue<Thread> modifyThreads = new Queue<Thread>();
+        Queue<Pair<int, int>> sectorQueue = new Queue<Pair<int, int>>();
 
+        //For each x sector
         for (int x = CoordToSectorNumber(xBL); x <= CoordToSectorNumber(xTR); ++x)
         {
+            //For each y sector
             for (int y = CoordToSectorNumber(yBL); y <= CoordToSectorNumber(yTR); ++y)
             {
-                //Thread t = new Thread(delegate ()
+                int locX = x;
+                int locY = y;
+                //New thread
+                Thread t = new Thread(delegate ()
                 {
+                    //If not the shared dimension, update just their own
                     if (dimension != 2)
                     {
-                        GridSectors[dimension, x, y].UpdateSubsectors();
+                        GridSectors[dimension, locX, locY].UpdateSubsectors();
                     }
+                    //Else, this is the shared dimension and both other dimensions need to be updated
                     else//if (dimension == 2)
                     {
-                        GridSectors[0, x, y].UpdateSubsectors();
-                        GridSectors[1, x, y].UpdateSubsectors();
+                        GridSectors[0, locX, locY].UpdateSubsectors();
+                        GridSectors[1, locX, locY].UpdateSubsectors();
                     }
-                    GridSectors[2, x, y].UpdateSubsectors();
+                    //The shared dimension is always updated
+                    GridSectors[2, locX, locY].UpdateSubsectors();
                 }
-                //);
-                //modifyThreads.Push(t);
-                //t.Start();
+                );
+                //Add the new thread and the location to the queues
+                modifyThreads.Enqueue(t);
+                sectorQueue.Enqueue(new Pair<int, int>(x, y));
+                //Start the thread
+                t.Start();
             }
         }
 
-        //while (modifyThreads.Count > 0)
-        //{
-        //    if (!modifyThreads.Peek().IsAlive)
-        //    {
-        //        modifyThreads.Pop();
-        //    }
-        //}
+        //While there are more threads
+        while (modifyThreads.Count > 0)
+        {
+            //Wait for the next thread to finish
+            modifyThreads.Dequeue().Join();
+            Pair<int, int> sectorXY = sectorQueue.Dequeue();
 
-        //Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
+            int x = sectorXY.First;
+            int y = sectorXY.Second;
+
+            //Update the unity mesh data for the appropriate sectors/dimensions
+            if (dimension != 2)
+            {
+                GridSectors[dimension, x, y].UpdateMeshes();
+            }
+            else//if (dimension == 2)
+            {
+                GridSectors[0, x, y].UpdateMeshes();
+                GridSectors[1, x, y].UpdateMeshes();
+            }
+            GridSectors[2, x, y].UpdateMeshes();
+        }
+
+        Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
     }
 
     int CoordToSectorNumber(int n)
@@ -324,11 +352,14 @@ public class Grid : MonoBehaviour
             {
                 Vector3 worldPoint = transform.position + Vector3.right * ((x * SectorSize) + nodeRadius) + Vector3.forward * ((y * SectorSize) + nodeRadius);
 
-                GridSectors[(int)Mathf.Log(mask, 2) - 8, x, y] = new Sector(mask,
-                                                  (int)((x + 1) * SectorSize <= gridWorldSize.x ? SectorSize : gridWorldSize.x % SectorSize),
-                                                  (int)((y + 1) * SectorSize <= gridWorldSize.y ? SectorSize : gridWorldSize.y % SectorSize),
-                                                  worldPoint,
-                                                  nodeDiameter);
+                Sector s = new Sector(mask,
+                                      (int)((x + 1) * SectorSize <= gridWorldSize.x ? SectorSize : gridWorldSize.x % SectorSize),
+                                      (int)((y + 1) * SectorSize <= gridWorldSize.y ? SectorSize : gridWorldSize.y % SectorSize),
+                                      worldPoint,
+                                      nodeDiameter);
+
+                GridSectors[(int)Mathf.Log(mask, 2) - 8, x, y] = s;
+                s.UpdateMeshes();
             }
         }
     }
@@ -474,3 +505,19 @@ class SubsectorMeshException : System.Exception
     {
     }
 }
+
+public class Pair<T, U>
+{
+    public Pair()
+    {
+    }
+
+    public Pair(T first, U second)
+    {
+        this.First = first;
+        this.Second = second;
+    }
+
+    public T First { get; set; }
+    public U Second { get; set; }
+};
