@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public class Grid : MonoBehaviour
 {
@@ -123,7 +124,7 @@ public class Grid : MonoBehaviour
 
     bool GetWalkableAt(char dim, int xCoord, int yCoord)
     {
-        if (dim > 2 || dim < 0)
+        if (dim > 2)
             throw new InvalidDimensionException(dim);
 
         return GridSectors[dim, CoordToSectorNumber(xCoord), CoordToSectorNumber(yCoord)].GetWalkableAt(xCoord % (nodesPerSector), yCoord % (nodesPerSector));
@@ -155,42 +156,37 @@ public class Grid : MonoBehaviour
 
     void SetWalkableAt(char dim, int xCoord, int yCoord, bool newCanWalk)
     {
-        if (dim > 2 || dim < 0)
+        if (dim > 2)
             throw new InvalidDimensionException(dim);
 
-        
-        if (dim == 0)
-        {
-            if (GetWalkableAt((char)1, xCoord, yCoord))
-                AssignWalkable((char)2, xCoord, yCoord, newCanWalk);
-        }
-        else if (dim == 1)
-        {
-            if (GetWalkableAt((char)0, xCoord, yCoord))
-                AssignWalkable((char)2, xCoord, yCoord, newCanWalk);
-        }
-        else if (dim == 2)
+        //If shared dimension, both other dims get set
+        if (dim == 2)
         {
             for (char d = (char)0; d < (char)2; ++d)
                 AssignWalkable(d, xCoord, yCoord, newCanWalk);
         }
+        //Else it must be dim 1 or 2, in which case only change shared dimension if the other dim is clear
+        else if (GetWalkableAt((char)(dim ^ 1), xCoord, yCoord))
+            AssignWalkable((char)2, xCoord, yCoord, newCanWalk);
+
+        //Always set own dimension
         AssignWalkable(dim, xCoord, yCoord, newCanWalk);
     }
 
     void AssignWalkable(char dim, int x, int y, bool newCanWalk)
     {
-        try
-        {
+        //try
+        //{
             GridSectors[dim, CoordToSectorNumber(x), CoordToSectorNumber(y)].SetWalkableAt(x % nodesPerSector, y % nodesPerSector, newCanWalk);
-        }
-        catch (System.IndexOutOfRangeException)
-        {
-            Debug.Log(string.Format("Dim: {0}, X: {1}, Y: {2}, Sector X: {3}, Sector Y: {4}, Adjusted X: {5}, Adjusted Y: {6}", (int)dim, x, y, CoordToSectorNumber(x), CoordToSectorNumber(y), x % nodesPerSector, y % nodesPerSector));
-            throw new InvalidDimensionException();
-        }
+        //}
+        //catch (System.IndexOutOfRangeException)
+        //{
+        //    Debug.Log(string.Format("Dim: {0}, X: {1}, Y: {2}, Sector X: {3}, Sector Y: {4}, Adjusted X: {5}, Adjusted Y: {6}", (int)dim, x, y, CoordToSectorNumber(x), CoordToSectorNumber(y), x % nodesPerSector, y % nodesPerSector));
+        //    throw new InvalidDimensionException();
+        //}
     }
 
-    public void ModifyBlockage(LayerMask dimension, bool isWalkable, Vector3 bottomLeft, Vector3 topRight)
+    public void ModifyBlockage(char dimension, bool isWalkable, Vector3 bottomLeft, Vector3 topRight)
     {
         System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
         timer.Start();
@@ -224,34 +220,45 @@ public class Grid : MonoBehaviour
             }
         }
 
+        //Stack<Thread> modifyThreads = new Stack<Thread>();
+
         for (int x = CoordToSectorNumber(xBL); x <= CoordToSectorNumber(xTR); ++x)
         {
             for (int y = CoordToSectorNumber(yBL); y <= CoordToSectorNumber(yTR); ++y)
             {
-                if(dimension == dim3)
+                //Thread t = new Thread(delegate ()
                 {
-                    GridSectors[0, x, y].UpdateSubsectors();
-                    GridSectors[1, x, y].UpdateSubsectors();
+                    if (dimension != 2)
+                    {
+                        GridSectors[dimension, x, y].UpdateSubsectors();
+                    }
+                    else//if (dimension == 2)
+                    {
+                        GridSectors[0, x, y].UpdateSubsectors();
+                        GridSectors[1, x, y].UpdateSubsectors();
+                    }
+                    GridSectors[2, x, y].UpdateSubsectors();
                 }
-                else if (dimension == dim1)
-                {
-                    GridSectors[0, x, y].UpdateSubsectors();
-                }
-                else if (dimension == dim2)
-                {
-                    GridSectors[1, x, y].UpdateSubsectors();
-                }
-                GridSectors[2, x, y].UpdateSubsectors();
-                //GridSectors[(int)Mathf.Log(dimension, 2) - 8, x, y].UpdateSubsectors();
+                //);
+                //modifyThreads.Push(t);
+                //t.Start();
             }
         }
 
-        Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
+        //while (modifyThreads.Count > 0)
+        //{
+        //    if (!modifyThreads.Peek().IsAlive)
+        //    {
+        //        modifyThreads.Pop();
+        //    }
+        //}
+
+        //Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
     }
 
     int CoordToSectorNumber(int n)
     {
-        return (int)Mathf.RoundToInt(n / nodesPerSector);
+        return n / nodesPerSector;
     }
 
     /// <summary>
@@ -261,7 +268,7 @@ public class Grid : MonoBehaviour
     /// <param name="bottomLeft">Location of Bottom Left corner. (X, UNUSED, Y)</param>
     /// <param name="topRight">Location of Top Right corner. (X, UNUSED, Y)</param>
     /// <returns></returns>
-    public bool AreaHasObstacle(LayerMask dimension, Vector3 bottomLeft, Vector3 topRight)
+    public bool AreaHasObstacle(char dimension, Vector3 bottomLeft, Vector3 topRight)
     {
         int xBL, yBL;
         NodeFromWorldPoint(bottomLeft, out xBL, out yBL);
@@ -310,7 +317,7 @@ public class Grid : MonoBehaviour
 
     void GenerateSectors(LayerMask mask)
     {
-        Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
+        //Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
         for (int x = 0; x < ((int)gridWorldSize.x - 1) / SectorSize + 1; ++x)
         {
             for (int y = 0; y < ((int)gridWorldSize.y - 1)/ SectorSize + 1; ++y)
