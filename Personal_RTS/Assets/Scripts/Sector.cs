@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class Sector
 {
-    static uint SubsectorIdentifier = 0;
-
     public Color sectorColor
     {
         get;
@@ -20,13 +18,20 @@ public class Sector
     }
     int xSize, ySize;
 
+    public Vector3 Position
+    {
+        get;
+        private set;
+    }
+    int dimension, sectorX, sectorY;
+
     public List<SubSector> subs
     {
         get;
         private set;
     }
 
-    public Sector(LayerMask dim, int _xSize, int _ySize, Vector3 cornerPos, float nodeDiameter)
+    public Sector(LayerMask dim, int _xSize, int _ySize, Vector3 cornerPos, float nodeDiameter, int _sectorX, int _sectorY)
     {
         xSize = Mathf.RoundToInt(_xSize / nodeDiameter);
         ySize = Mathf.RoundToInt(_ySize / nodeDiameter);
@@ -34,6 +39,12 @@ public class Sector
         Color c = Random.ColorHSV();
         c.a = 0.5f;
         sectorColor = c;
+
+        Position = cornerPos;
+        sectorX = _sectorX;
+        sectorY = _sectorY;
+
+        dimension = (int)Mathf.Log(dim, 2) - 8;
 
         grid = new Node[xSize, ySize];
         
@@ -88,23 +99,24 @@ public class Sector
         System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
         timer.Start();
 
+        foreach (Node n in grid)
+            if(n != null)
+                n.subsector = null;
+
         subs = new List<SubSector>();
 
         //HashSet<Node> touchedNodes = new HashSet<Node>();
         Stack<NodeWithCoord> neighborGettorList = new Stack<NodeWithCoord>();
-
-        uint minNewSubsector = SubsectorIdentifier;
 
         for (int x = 0; x < xSize; ++x)
         {
             for (int y = 0; y < ySize; ++y)
             {
                 Node n = grid[x, y];
-                if (n != null && (n.subsectorInstance < minNewSubsector || n.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(n))
+                if (n != null && n.subsector == null)//!touchedNodes.Contains(n))
                 {
                     SubSector s = new SubSector(this);
                     subs.Add(s);
-                    s.SubsectorIdentity = SubsectorIdentifier++;
 
                     //neighborGettorList.Add(new NodeWithCoord(n, x, y));
                     neighborGettorList.Push(new NodeWithCoord(n, x, y));
@@ -123,7 +135,7 @@ public class Sector
                         if (nextX >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
@@ -134,7 +146,7 @@ public class Sector
                         if (nextX < xSize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
@@ -146,7 +158,7 @@ public class Sector
                         if (nextY >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
@@ -157,7 +169,7 @@ public class Sector
                         if (nextY < ySize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && (neighbor.subsectorInstance < minNewSubsector || neighbor.subsectorInstance > SubsectorIdentifier))//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
                             {
                                 neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
@@ -179,8 +191,8 @@ public class Sector
         //    }
         //}
 
-        foreach(SubSector s in subs)
-            s.GenerateMesh();
+        //foreach(SubSector s in subs)
+        //    s.GenerateMesh();
 
         //Debug.Log(string.Format("Generated Subsectors for Sector {0} in {1}ms", this.ToString(), timer.ElapsedMilliseconds));
         timer.Stop();
@@ -211,8 +223,13 @@ public class Sector
     //Subsector Class
     public class SubSector
     {
-        Sector sect;
-        public uint SubsectorIdentity;//HashSet<Node> NodesInSubsector = new HashSet<Node>();
+        public Sector sect
+        {
+            get;
+            private set;
+        }
+
+        public HashSet<SubSector> ConnectedSectors = new HashSet<SubSector>();
 
         public Mesh mesh
         {
@@ -249,10 +266,73 @@ public class Sector
 
         public void AddNodeToSub(Node n)
         {
-            n.subsectorInstance = SubsectorIdentity;
+            //n.subsectorInstance = SubsectorIdentity;
+            n.subsector = this;
             //NodesInSubsector.Add(n);
         }
 
+        public void UpdateConnectedSubsectors()
+        {
+            ConnectedSectors.Clear();
+
+            Grid g = Grid.GetGrid;
+
+            Sector s;
+
+            if (sect.sectorY - 1 >= 0)
+            {
+                s = g.GridSectors[sect.dimension, sect.sectorX, sect.sectorY - 1];
+
+                for (int x = 0; x < sect.xSize; ++x)
+                {
+                    FindConnectedSubsectors(s, x, s.ySize - 1, x, 0);
+                }
+            }
+
+            if (sect.sectorY + 1 < Grid.GetGrid.ySectorCount)
+            {
+                s = g.GridSectors[sect.dimension, sect.sectorX, sect.sectorY + 1];
+
+                for (int x = 0; x < sect.xSize; ++x)
+                {
+                    FindConnectedSubsectors(s, x, 0, x, sect.ySize - 1);
+                }
+            }
+
+            if (sect.sectorX - 1 >= 0)
+            {
+                s = g.GridSectors[sect.dimension, sect.sectorX - 1, sect.sectorY];
+
+                for (int y = 0; y < sect.ySize; ++y)
+                {
+                    FindConnectedSubsectors(s, s.xSize - 1, y, 0, y);
+                }
+            }
+
+            if (sect.sectorX + 1 < Grid.GetGrid.xSectorCount)
+            {
+                s = g.GridSectors[sect.dimension, sect.sectorX + 1, sect.sectorY];
+
+                for (int y = 0; y < sect.ySize; ++y)
+                {
+                    FindConnectedSubsectors(s, 0, y, sect.xSize - 1, y);
+                }
+            }
+        }
+
+        void FindConnectedSubsectors(Sector s, int otherX, int otherY, int selfX, int selfY)
+        {
+            if (s.grid[otherX, otherY] == null || grid[selfX, selfY] == null)
+                return;
+
+            if (grid[selfX, selfY].subsector == this)
+            {
+                ConnectedSectors.Add(s.grid[otherX, otherY].subsector);
+                //s.grid[otherX, otherY].subsector.ConnectedSectors.Add(this);
+            }
+        }
+
+#if UNITY_EDITOR
         public void GenerateMesh()
         {
 
@@ -271,7 +351,7 @@ public class Sector
             {
                 for (y = 0; y < sect.ySize; ++y)
                 {
-                    if (grid[x, y] != null && grid[x, y].subsectorInstance == SubsectorIdentity)//NodesInSubsector.Contains(grid[x, y]))
+                    if (grid[x, y] != null && grid[x, y].subsector == this)//NodesInSubsector.Contains(grid[x, y]))
                     {
                         broke = true;
                         break;
@@ -313,7 +393,7 @@ public class Sector
             
             //verts = null;
         }
-
+        
         void CalcMesh(List<Vector2> verts)
         {
             Triangulator tr = new Triangulator(verts);
@@ -326,7 +406,7 @@ public class Sector
                 vertices[i] = new Vector3(verts[i].x, verts[i].y, 0);
             }
         }
-
+        
         public void SetMeshValues()
         {
             if (subSectorColor != Color.red)
@@ -347,7 +427,7 @@ public class Sector
                 ReverseNormals();
             }
         }
-
+        
         List<Vector2> RemoveRedundantVerts(List<Vector2> verts)
         {
             for (int x = 1; x < verts.Count - 1; ++x)
@@ -381,7 +461,7 @@ public class Sector
 
             return verts;
         }
-
+        
         //Extreme logic
         List<Vector2> CheckNext(int x, int y, int xN, int yM, bool success)
         {
@@ -527,7 +607,7 @@ public class Sector
             }
             return verts;
         }
-
+        
         void ReverseNormals()
         {
             Vector3[] normals = mesh.normals;
@@ -547,6 +627,7 @@ public class Sector
                 mesh.SetTriangles(triangles, m);
             }
         }
+#endif
     }
 
     struct NodeWithCoord

@@ -28,11 +28,24 @@ public class Grid : MonoBehaviour
 
     float nodeDiameter;
     int gridSizeX, gridSizeY;
-    int xSectorCount, ySectorCount;
+    public int xSectorCount
+    {
+        get;
+        private set;
+    }
+    public int ySectorCount
+    {
+        get;
+        private set;
+    }
     int nodesPerSector;
     
     public int SectorSize = 10;
-    Sector[,,] GridSectors;
+    public Sector[,,] GridSectors
+    {
+        get;
+        private set;
+    }
 
     public List<Node> debugPath = new List<Node>();
 
@@ -258,33 +271,84 @@ public class Grid : MonoBehaviour
             }
         }
 
-        //While there are more threads
         while (modifyThreads.Count > 0)
-        {
-            //Wait for the next thread to finish
             modifyThreads.Dequeue().Join();
-            Pair<int, int> sectorXY = sectorQueue.Dequeue();
 
-            int x = sectorXY.First;
-            int y = sectorXY.Second;
-
-            //Update the unity mesh data for the appropriate sectors/dimensions
-            if (dimension != 2)
+        //For each x sector
+        for (int x = Mathf.Clamp(CoordToSectorNumber(xBL) - 1, 0, xSectorCount); x <= Mathf.Clamp(CoordToSectorNumber(xTR) + 1, 0, xSectorCount); ++x)
+        {
+            //For each y sector
+            for (int y = Mathf.Clamp(CoordToSectorNumber(yBL) - 1, 0, ySectorCount); y <= Mathf.Clamp(CoordToSectorNumber(yTR) + 1, 0, ySectorCount); ++y)
             {
-                GridSectors[dimension, x, y].UpdateMeshes();
+                int locX = x;
+                int locY = y;
+                //New thread
+                Thread t = new Thread(delegate ()
+                {
+                    //If not the shared dimension, update just their own
+                    if (dimension != 2)
+                    {
+                        foreach (Sector.SubSector s in GridSectors[dimension, locX, locY].subs)
+                        {
+                            s.UpdateConnectedSubsectors();
+                        }
+                    }
+                    //Else, this is the shared dimension and both other dimensions need to be updated
+                    else//if (dimension == 2)
+                    {
+                        foreach (Sector.SubSector s in GridSectors[0, locX, locY].subs)
+                        {
+                            s.UpdateConnectedSubsectors();
+                        }
+                        foreach (Sector.SubSector s in GridSectors[1, locX, locY].subs)
+                        {
+                            s.UpdateConnectedSubsectors();
+                        }
+                    }
+                    //The shared dimension is always updated
+                    foreach (Sector.SubSector s in GridSectors[2, locX, locY].subs)
+                    {
+                        s.UpdateConnectedSubsectors();
+                    }
+                }
+                );
+                //Add the new thread and the location to the queues
+                modifyThreads.Enqueue(t);
+                //Start the thread
+                t.Start();
             }
-            else//if (dimension == 2)
-            {
-                GridSectors[0, x, y].UpdateMeshes();
-                GridSectors[1, x, y].UpdateMeshes();
-            }
-            GridSectors[2, x, y].UpdateMeshes();
         }
+
+        while (modifyThreads.Count > 0)
+            modifyThreads.Dequeue().Join();
+
+        ////While there are more threads
+        //while (modifyThreads.Count > 0)
+        //{
+        //    //Wait for the next thread to finish
+        //    modifyThreads.Dequeue().Join();
+        //    Pair<int, int> sectorXY = sectorQueue.Dequeue();
+        //
+        //    int x = sectorXY.First;
+        //    int y = sectorXY.Second;
+        //
+        //    //Update the unity mesh data for the appropriate sectors/dimensions
+        //    if (dimension != 2)
+        //    {
+        //        GridSectors[dimension, x, y].UpdateMeshes();
+        //    }
+        //    else//if (dimension == 2)
+        //    {
+        //        GridSectors[0, x, y].UpdateMeshes();
+        //        GridSectors[1, x, y].UpdateMeshes();
+        //    }
+        //    GridSectors[2, x, y].UpdateMeshes();
+        //}
 
         Debug.Log(string.Format("Updated terrain data for structure in {0}ms", timer.ElapsedMilliseconds));
     }
 
-    int CoordToSectorNumber(int n)
+    public int CoordToSectorNumber(int n)
     {
         return n / nodesPerSector;
     }
@@ -340,6 +404,39 @@ public class Grid : MonoBehaviour
         timer.Start();
         GenerateSectors(dim3 ^ dim2 ^ dim1);
         Debug.Log(string.Format("Generated Dimension 3 Grid, sectors, and subsectors in {0}ms", timer.ElapsedMilliseconds));
+
+        Queue<Thread> modifyThreads = new Queue<Thread>();
+
+        //For each x sector
+        for (int x = 0; x < xSectorCount; ++x)
+        {
+            //For each y sector
+            for (int y = 0; y < ySectorCount; ++y)
+            {
+                for (int dimension = 0; dimension < 3; ++dimension)
+                {
+                    int locX = x;
+                    int locY = y;
+                    int locDim = dimension;
+                    //New thread
+                    Thread t = new Thread(delegate ()
+                    {
+                        foreach (Sector.SubSector s in GridSectors[locDim, locX, locY].subs)
+                        {
+                            s.UpdateConnectedSubsectors();
+                        }
+                    });
+                    //Add the new thread and the location to the queues
+                    modifyThreads.Enqueue(t);
+                    //Start the thread
+                    t.Start();
+                }
+            }
+        }
+
+        while (modifyThreads.Count > 0)
+            modifyThreads.Dequeue().Join();
+
         timer.Stop();
     }
 
@@ -356,10 +453,12 @@ public class Grid : MonoBehaviour
                                       (int)((x + 1) * SectorSize <= gridWorldSize.x ? SectorSize : gridWorldSize.x % SectorSize),
                                       (int)((y + 1) * SectorSize <= gridWorldSize.y ? SectorSize : gridWorldSize.y % SectorSize),
                                       worldPoint,
-                                      nodeDiameter);
+                                      nodeDiameter,
+                                      x,
+                                      y);
 
                 GridSectors[(int)Mathf.Log(mask, 2) - 8, x, y] = s;
-                s.UpdateMeshes();
+                //s.UpdateMeshes();
             }
         }
     }
@@ -380,6 +479,7 @@ public class Grid : MonoBehaviour
         return;// grid[x, y];
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         Gizmos.DrawWireCube(transform.position + new Vector3(gridWorldSize.x / 2, 0, gridWorldSize.y / 2), new Vector3(gridWorldSize.x, 1, gridWorldSize.y));
@@ -415,9 +515,30 @@ public class Grid : MonoBehaviour
                             Gizmos.color = s.subSectorColor;
                             try
                             {
-                                Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up * 0.001f, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
+                                if(s.mesh != null)
+                                    Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up * 0.001f, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
+                                else
+                                {
+                                    s.GenerateMesh();
+                                    s.SetMeshValues();
+                                    Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up * 0.001f, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
+                                }
+
+                                foreach (Sector.SubSector connectedSub in s.ConnectedSectors)
+                                {
+                                    Gizmos.color = Color.red;
+                                    Vector3 sCenter = s.mesh.bounds.center;
+                                    sCenter.z = sCenter.y;
+                                    sCenter.y = 0;
+                                    Vector3 connCenter = connectedSub.mesh.bounds.center;
+                                    connCenter.z = connCenter.y;
+                                    connCenter.y = 0;
+                                    Gizmos.DrawLine(GridSectors[dimSector, x, y].Position + sCenter * nodeDiameter, connectedSub.sect.Position + connCenter * nodeDiameter);
+                                }
                             }
-                            catch { continue; }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
@@ -476,6 +597,7 @@ public class Grid : MonoBehaviour
         //    }
         //}
     }
+#endif
 
     [System.Serializable]
     public class TerrainType
