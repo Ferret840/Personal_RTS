@@ -69,7 +69,7 @@ public class Grid : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha3))
             view = dim3;
 
-        if (displayGridGizmos && Input.GetMouseButtonDown(0))
+        if (displayGridGizmos && Input.GetButtonDown("SelectDeselect"))
         {
             Vector3 mousePos = Input.mousePosition;
 

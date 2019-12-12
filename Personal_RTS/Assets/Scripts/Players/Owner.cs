@@ -5,15 +5,16 @@ using UnityEngine;
 public class Owner : MonoBehaviour
 {
     [SerializeField]
-    protected int OwnByPlayerNum;
+    public int PlayerNumber
+    {
+        get;
+        protected set;
+    }
+
+    public int EditorSetPlayerNum;
 
     [SerializeField]
     protected UniversalStats univStats;
-
-    public int ControlledByPlayerNum
-    {
-        get { return OwnByPlayerNum; }
-    }
 
     [System.NonSerialized]
     public bool IsSelected = false;
@@ -28,9 +29,15 @@ public class Owner : MonoBehaviour
     public LayerMask ValidMovementLayers;
 
     // Use this for initialization
+    void Awake()
+    {
+        PlayerNumber = EditorSetPlayerNum;
+    }
+
+    // Use this for initialization
     void Start ()
     {
-		
+        
 	}
 	
 	// Update is called once per frame
