@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Camera))]
 public class UnitSelection : MonoBehaviour
 {
+    public int PlayerNumber;
+
     public LayerMask SelectionLayer;
-    int PlayerNumber = 0;
 
     //public float ClickToHoldTime = 0.25f;
     bool IsDragging = false;
@@ -13,18 +15,24 @@ public class UnitSelection : MonoBehaviour
 
     Camera cam;
 
-    HashSet<Owner> selectedObjects = new HashSet<Owner>();
-
-    static List<List<Unit>> AllUnits;// = new List<List<Unit>>(8);
-
-    static public void AddUnit(Unit u)
+    public HashSet<Owner> selectedObjects
     {
-        AllUnits[u.ControlledByPlayerNum].Add(u);
+        get;
+        private set;
     }
 
-    static public void RemoveUnit(Unit u)
+    List<Unit> AllControlledUnits;// = new List<List<Unit>>(8);
+
+    Owner PreviousMouseover;
+
+    public void AddUnit(Unit u)
     {
-        AllUnits[u.ControlledByPlayerNum].Remove(u);
+        AllControlledUnits.Add(u);
+    }
+
+    public void RemoveUnit(Unit u)
+    {
+        AllControlledUnits.Remove(u);
     }
 
     public KeyCode[] keycodes = new KeyCode[0];
@@ -34,21 +42,14 @@ public class UnitSelection : MonoBehaviour
 
     private void Awake()
     {
-        if (AllUnits == null)
-        {
-            AllUnits = new List<List<Unit>>(8);
-
-            for (int i = 0; i < AllUnits.Capacity; ++i)
-            {
-                AllUnits.Add(new List<Unit>(8));
-            }
-        }
+        selectedObjects = new HashSet<Owner>();
+        AllControlledUnits = new List<Unit>();
     }
 
     // Use this for initialization
     void Start ()
     {
-        cam = Camera.main;
+        cam = gameObject.GetComponent<Camera>();
 	}
 	
 	// Update is called once per frame
@@ -66,11 +67,11 @@ public class UnitSelection : MonoBehaviour
     /// </summary>
     void HandleMouseInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetButtonDown("SelectDeselect"))
         {
             MouseStartPos = Input.mousePosition;
         }
-        else if (Input.GetMouseButton(0) == true)
+        else if (Input.GetButton("SelectDeselect") == true)
         {
             if (IsDragging == false && (Input.mousePosition - MouseStartPos).sqrMagnitude > minDragSize.sqrMagnitude)
             {
@@ -78,7 +79,7 @@ public class UnitSelection : MonoBehaviour
                 StartCoroutine(DragHighlight());
             }
         }
-        else if (Input.GetMouseButtonUp(0))
+        else if (Input.GetButtonUp("SelectDeselect"))
         {
             if (IsDragging == false)
             {
@@ -90,12 +91,17 @@ public class UnitSelection : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetButtonDown("GiveCommand"))
         {
             foreach (Owner o in selectedObjects)
             {
                 o.OnRightMouse();
             }
+        }
+        
+        if (Input.GetButton("SelectDeselect") == false && Input.GetButton("GiveCommand") == false)
+        {
+            MouseOver();
         }
     }
 
@@ -149,19 +155,26 @@ public class UnitSelection : MonoBehaviour
 
         if (closest == null)
         {
+            DeselectOld();
             return;
         }
 
-        if (Input.GetKey(KeyCode.LeftShift) == false && Input.GetKey(KeyCode.RightShift) == false)
+        if (Input.GetButton("AddSelection") == false)
         {
             //Deselect all other units
+            DeselectOld();
+        }
+        HashSet<Owner>.Enumerator e = selectedObjects.GetEnumerator();
+        e.MoveNext();
+        if(selectedObjects.Count > 0 && closest.PlayerNumber != e.Current.PlayerNumber)
+        {
             DeselectOld();
         }
 
         //Deselect the single unit if already selected
         if (selectedObjects.Contains(closest))
         {
-            closest.Deselect();
+            DeselectSingle(closest);
             selectedObjects.Remove(closest);
         }
         //Otherwise, select the single unit
@@ -169,6 +182,46 @@ public class UnitSelection : MonoBehaviour
         {
             SelectNew(closest);
         }
+    }
+
+    /// <summary>
+    /// Handles logic for when mousing over any object when no button is down
+    /// </summary>
+    void MouseOver()
+    {
+        RaycastHit hit;
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        bool ifCastHit = Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
+
+        Owner closest = null;
+        float dist = float.MaxValue;
+
+        foreach (RaycastHit h in hits)
+        {
+            Owner o = h.transform.GetComponent<Owner>();
+            if (o == null)
+                continue;
+
+            float newDist = Vector3.SqrMagnitude(Input.mousePosition - cam.WorldToViewportPoint(gameObject.transform.position));
+            if (newDist < dist)
+            {
+                closest = h.transform.GetComponent<Owner>();
+                dist = newDist;
+            }
+        }
+
+        if (PreviousMouseover != null)
+            PreviousMouseover.SetHighlighted(false);
+
+        if (closest == null)
+        {
+            return;
+        }
+
+        PreviousMouseover = closest;
+
+        closest.SetHighlighted(true);
     }
 
     /// <summary>
@@ -180,20 +233,20 @@ public class UnitSelection : MonoBehaviour
         HashSet<Unit> highlightedUnits = new HashSet<Unit>();
 
         //While holding left mouse button
-        while (Input.GetMouseButton(0))
+        while (Input.GetButton("SelectDeselect"))
         {
             //Get every Unit type object
-            foreach (Unit u in AllUnits[PlayerNumber])
+            foreach (Unit u in AllControlledUnits)
             {
                 int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
                 int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
 
                 //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
-                if (u.ControlledByPlayerNum == PlayerNumber && (SelectLayer & UnitLayer) != 0 && IsWithinSelectionBounds(u.gameObject))
+                if ((SelectLayer & UnitLayer) != 0 && IsWithinSelectionBounds(u.gameObject))
                 {
                     highlightedUnits.Add(u);
                     //Don't highlight if already selected
-                    if(selectedObjects.Contains(u.GetComponent<Owner>()) == false)
+                    //if(selectedObjects.Contains(u.GetComponent<Owner>()) == false)
                         u.SetHighlighted(true);
                 }
                 else
@@ -206,10 +259,16 @@ public class UnitSelection : MonoBehaviour
         }
 
         //If no shift key is down
-        if (Input.GetKey(KeyCode.LeftShift) == false && Input.GetKey(KeyCode.RightShift) == false)
+        if (Input.GetButton("AddSelection") == false)
         {
             //Debug.Log("Shift not pressed");
             //Deselect all other units
+            DeselectOld();
+        }
+        HashSet<Owner>.Enumerator e = selectedObjects.GetEnumerator();
+        e.MoveNext();
+        if (selectedObjects.Count > 0 && e.Current.PlayerNumber != PlayerNumber)
+        {
             DeselectOld();
         }
 
@@ -217,6 +276,7 @@ public class UnitSelection : MonoBehaviour
         foreach (Unit u in highlightedUnits)
         {
             Owner o = u.GetComponent<Owner>();
+            o.SetHighlighted(false);
             if (selectedObjects.Contains(o) == false)
                 SelectNew(o);
         }

@@ -38,7 +38,7 @@ public class Unit : Owner
 
     private void Start()
     {
-        UnitSelection.AddUnit(this);
+        PlayerManager.instance.PlayerList[PlayerNumber].Selector.AddUnit(this);
         //StartCoroutine(UpdatePath());
         //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
     }
@@ -274,7 +274,7 @@ public class Unit : Owner
 
     protected override void HandleDeath()
     {
-        UnitSelection.RemoveUnit(this);
+        PlayerManager.instance.PlayerList[PlayerNumber].Selector.RemoveUnit(this);
         base.HandleDeath();
     }
 
