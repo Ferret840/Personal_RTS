@@ -16,6 +16,11 @@ public class PlayerCamera : MonoBehaviour
 
     Vector3 mouseMoved;
 
+    public Material mat;
+
+    public float EffectMaxDuration = 1f;
+    float visualEffectDuration = 0f;
+
     // Use this for initialization
     void Start ()
     {
@@ -100,8 +105,48 @@ public class PlayerCamera : MonoBehaviour
             transform.position += transform.forward * Input.GetAxis("Zoom");
         }
 
-        view = dimensions[viewIndex];
 
+        if (view != dimensions[viewIndex])
+        {
+            view = dimensions[viewIndex];
+
+            visualEffectDuration = EffectMaxDuration;
+
+            StopCoroutine("ChangeViewEffect");
+            StartCoroutine("ChangeViewEffect");
+        }
+    }
+
+    IEnumerator ChangeViewEffect()
+    {
+        float i = 0;
+
+        for (i = 0; i < EffectMaxDuration / 2; i += Time.deltaTime, visualEffectDuration -= Time.deltaTime)
+        {
+            mat.SetFloat("_Oscillater", Mathf.Lerp(0, 1, i / EffectMaxDuration * 2));
+
+            yield return null;
+        }
+        
         cam.cullingMask = view;
+
+        for (i = 0; i < EffectMaxDuration / 2; i += Time.deltaTime, visualEffectDuration -= Time.deltaTime)
+        {
+            mat.SetFloat("_Oscillater", Mathf.Lerp(1, 0, i / EffectMaxDuration * 2));
+
+            yield return null;
+        }
+    }
+
+    private void OnRenderImage(RenderTexture source, RenderTexture destination)
+    {
+        if (visualEffectDuration > 0f)
+        {
+            Graphics.Blit(source, destination, mat);
+        }
+        else
+        {
+            Graphics.Blit(source, destination);
+        }
     }
 }
