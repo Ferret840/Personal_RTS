@@ -133,7 +133,7 @@ public class UnitSelection : MonoBehaviour
     {
         RaycastHit hit;
         Ray ray = cam.ScreenPointToRay(MouseStartPos);
-        bool ifCastHit = Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
+        Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
         RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
         Owner closest = null;
@@ -191,7 +191,7 @@ public class UnitSelection : MonoBehaviour
     {
         RaycastHit hit;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        bool ifCastHit = Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
+        Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
         RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
         Owner closest = null;

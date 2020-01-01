@@ -5,7 +5,7 @@ using System.Threading;
 
 public class Grid : MonoBehaviour
 {
-    public static Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
+    public static Logger logger = new Logger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
 
     public static Grid GetGrid
     {
