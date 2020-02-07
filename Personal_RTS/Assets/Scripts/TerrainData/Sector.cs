@@ -1,6 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Tools;
+
+namespace TerrainData
+{
 
 public class Sector
 {
@@ -11,7 +15,7 @@ public class Sector
     }
 
     //Table of node locations. null = impassible, not-null = walkable
-    public Node[,] grid
+    public SectorNode[,] grid
     {
         get;
         private set;
@@ -46,8 +50,8 @@ public class Sector
 
         dimension = (int)Mathf.Log(dim, 2) - 8;
 
-        grid = new Node[xSize, ySize];
-        
+        grid = new SectorNode[xSize, ySize];
+
         for (int x = 0; x < xSize; ++x)
         {
             for (int y = 0; y < ySize; ++y)
@@ -86,7 +90,7 @@ public class Sector
 
                 if (walkable)
                 {
-                    grid[x, y] = new Node();
+                    grid[x, y] = new SectorNode();
                 }
             }
         }
@@ -99,45 +103,45 @@ public class Sector
         System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
         timer.Start();
 
-        foreach (Node n in grid)
-            if(n != null)
-                n.subsector = null;
+        foreach (SectorNode n in grid)
+            if (n != null)
+                n.Subsector = null;
 
         subs = new List<SubSector>();
 
         //HashSet<Node> touchedNodes = new HashSet<Node>();
-        Stack<NodeWithCoord> neighborGettorList = new Stack<NodeWithCoord>();
+        Stack<SectorNodeWithCoord> neighborGettorList = new Stack<SectorNodeWithCoord>();
 
         for (int x = 0; x < xSize; ++x)
         {
             for (int y = 0; y < ySize; ++y)
             {
-                Node n = grid[x, y];
-                if (n != null && n.subsector == null)//!touchedNodes.Contains(n))
+                SectorNode n = grid[x, y];
+                if (n != null && n.Subsector == null)//!touchedNodes.Contains(n))
                 {
                     SubSector s = new SubSector(this);
                     subs.Add(s);
 
                     //neighborGettorList.Add(new NodeWithCoord(n, x, y));
-                    neighborGettorList.Push(new NodeWithCoord(n, x, y));
+                    neighborGettorList.Push(new SectorNodeWithCoord(n, x, y));
 
                     while (neighborGettorList.Count > 0)
                     {
-                        NodeWithCoord nodeCoord = neighborGettorList.Pop();//[neighborGettorList.Count - 1];
-                        //touchedNodes.Add(nodeCoord.node);
-                        s.AddNodeToSub(nodeCoord.node);
+                        SectorNodeWithCoord nodeCoord = neighborGettorList.Pop();//[neighborGettorList.Count - 1];
+                                                                           //touchedNodes.Add(nodeCoord.node);
+                        s.AddNodeToSub(nodeCoord.Node);
 
-                        Node neighbor;
-                        int nextX = nodeCoord.x - 1;
-                        int nextY = nodeCoord.y;
+                        SectorNode neighbor;
+                        int nextX = nodeCoord.X - 1;
+                        int nextY = nodeCoord.Y;
 
                         //Get each of the 4 neighbors (a + shape)
                         if (nextX >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.Subsector == null)//!touchedNodes.Contains(neighbor))
                             {
-                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                neighborGettorList.Push(new SectorNodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
                             }
                         }
@@ -146,9 +150,9 @@ public class Sector
                         if (nextX < xSize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.Subsector == null)//!touchedNodes.Contains(neighbor))
                             {
-                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                neighborGettorList.Push(new SectorNodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
                             }
                         }
@@ -158,9 +162,9 @@ public class Sector
                         if (nextY >= 0)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.Subsector == null)//!touchedNodes.Contains(neighbor))
                             {
-                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                neighborGettorList.Push(new SectorNodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
                             }
                         }
@@ -169,9 +173,9 @@ public class Sector
                         if (nextY < ySize)
                         {
                             neighbor = grid[nextX, nextY];
-                            if (neighbor != null && neighbor.subsector == null)//!touchedNodes.Contains(neighbor))
+                            if (neighbor != null && neighbor.Subsector == null)//!touchedNodes.Contains(neighbor))
                             {
-                                neighborGettorList.Push(new NodeWithCoord(neighbor, nextX, nextY));
+                                neighborGettorList.Push(new SectorNodeWithCoord(neighbor, nextX, nextY));
                                 //touchedNodes.Add(neighbor);
                             }
                         }
@@ -214,7 +218,7 @@ public class Sector
     public bool SetWalkableAt(int x, int y, bool newCanWalk)
     {
         if (newCanWalk && grid[x, y] == null)
-            grid[x, y] = new Node();
+            grid[x, y] = new SectorNode();
         else if (!newCanWalk)
             grid[x, y] = null;
         return newCanWalk;//grid[x, y].SetWalkable(newCanWalk);
@@ -241,7 +245,7 @@ public class Sector
         Vector3[] vertices;
         int[] indices;
 
-        Node[,] grid
+        SectorNode[,] grid
         {
             get
             {
@@ -264,10 +268,10 @@ public class Sector
             //subSectorColor = c;
         }
 
-        public void AddNodeToSub(Node n)
+        public void AddNodeToSub(SectorNode n)
         {
             //n.subsectorInstance = SubsectorIdentity;
-            n.subsector = this;
+            n.Subsector = this;
             //NodesInSubsector.Add(n);
         }
 
@@ -325,9 +329,9 @@ public class Sector
             if (s.grid[otherX, otherY] == null || grid[selfX, selfY] == null)
                 return;
 
-            if (grid[selfX, selfY].subsector == this)
+            if (grid[selfX, selfY].Subsector == this)
             {
-                ConnectedSectors.Add(s.grid[otherX, otherY].subsector);
+                ConnectedSectors.Add(s.grid[otherX, otherY].Subsector);
                 //s.grid[otherX, otherY].subsector.ConnectedSectors.Add(this);
             }
         }
@@ -351,7 +355,7 @@ public class Sector
             {
                 for (y = 0; y < sect.ySize; ++y)
                 {
-                    if (grid[x, y] != null && grid[x, y].subsector == this)//NodesInSubsector.Contains(grid[x, y]))
+                    if (grid[x, y] != null && grid[x, y].Subsector == this)//NodesInSubsector.Contains(grid[x, y]))
                     {
                         broke = true;
                         break;
@@ -374,7 +378,7 @@ public class Sector
 
                 CalcMesh(verts);
             }
-            catch (SubsectorMeshException e)
+            catch (SubsectorMeshException)
             {
                 //List<Vector2> verts = new List<Vector2>();
                 //verts.Add(new Vector2(x, y));
@@ -390,23 +394,25 @@ public class Sector
                 //
                 //subSectorColor = Color.red;
             }
-            
+
             //verts = null;
         }
-        
+
         void CalcMesh(List<Vector2> verts)
         {
             Triangulator tr = new Triangulator(verts);
-            /*int[]*/ indices = tr.Triangulate();
+            /*int[]*/
+            indices = tr.Triangulate();
 
             // Create the Vector3 vertices
-            /*Vector3[]*/ vertices = new Vector3[verts.Count];
+            /*Vector3[]*/
+            vertices = new Vector3[verts.Count];
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = new Vector3(verts[i].x, verts[i].y, 0);
             }
         }
-        
+
         public void SetMeshValues()
         {
             if (subSectorColor != Color.red)
@@ -427,7 +433,7 @@ public class Sector
                 ReverseNormals();
             }
         }
-        
+
         List<Vector2> RemoveRedundantVerts(List<Vector2> verts)
         {
             for (int x = 1; x < verts.Count - 1; ++x)
@@ -454,14 +460,14 @@ public class Sector
             //if (verts.Count >= 3 &&
             //    ((verts[0].x == verts[verts.Count - 1].x && verts[verts.Count - 1].x == verts[verts.Count - 2].x) ||
             //     (verts[0].x == verts[verts.Count - 1].y && verts[verts.Count - 1].y == verts[verts.Count - 2].y))    )
-            if(verts[0] == verts[verts.Count-1])
+            if (verts[0] == verts[verts.Count - 1])
             {
                 verts.RemoveAt(verts.Count - 1);
             }
 
             return verts;
         }
-        
+
         //Extreme logic
         List<Vector2> CheckNext(int x, int y, int xN, int yM, bool success)
         {
@@ -478,7 +484,7 @@ public class Sector
                 //    throw new SubsectorMeshException();
 
                 int nextX = x + xN, nextY = y + yM;
-                
+
                 Vector2 nextVert = new Vector2(nextX, nextY) + new Vector2(0.5f * -yM, 0.5f * xN) + Vector2.one * 0.5f;
                 Vector2 nextVertNext = new Vector2(nextX, nextY) + new Vector2(0.5f * xN, 0.5f * yM) + Vector2.one * 0.5f;
 
@@ -540,7 +546,7 @@ public class Sector
                 }
 
                 //Get node to check
-                Node n = grid[nextX, nextY];
+                SectorNode n = grid[nextX, nextY];
 
                 //If this isn't in the subsector
                 if (n == null)// || n.subsectorInstance != SubsectorIdentity)//!NodesInSubsector.Contains(n))
@@ -574,7 +580,7 @@ public class Sector
                         return verts;
                     else if (verts[0] == nextVertNext)
                     {
-                    //    verts.Add(nextVertNext);
+                        //    verts.Add(nextVertNext);
                         return verts;
                     }
                     else
@@ -607,7 +613,7 @@ public class Sector
             }
             return verts;
         }
-        
+
         void ReverseNormals()
         {
             Vector3[] normals = mesh.normals;
@@ -630,17 +636,44 @@ public class Sector
 #endif
     }
 
-    struct NodeWithCoord
+    struct SectorNodeWithCoord
     {
-        public Node node;
-        public int x;
-        public int y;
+        public SectorNode Node;
+        public int X;
+        public int Y;
 
-        public NodeWithCoord(Node n, int _x, int _y)
+        public SectorNodeWithCoord(SectorNode n, int _x, int _y)
         {
-            node = n;
-            x = _x;
-            y = _y;
+            Node = n;
+            X = _x;
+            Y = _y;
         }
     }
+
+    public class SectorNode
+    {
+        //public uint subsectorInstance = uint.MaxValue;
+        public SubSector Subsector = null;
+
+        ///<summary>
+        ///Always 0, 1, 2, or 3. Set bits indicate walkable in that dimension
+        ///</summary>
+        /*public bool isWalkable
+        {
+            get;
+            private set;
+        }
+
+        public Node(bool _isWalkable)
+        {
+            isWalkable = _isWalkable;
+        }
+
+        public bool SetWalkable(bool _newIsWalkable)
+        {
+            return isWalkable = _newIsWalkable;
+        }*/
+    }
+}
+
 }

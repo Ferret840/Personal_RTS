@@ -1,6 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Pathing;
+
+namespace Selectable
+{
 
 public class Owner : MonoBehaviour
 {
@@ -27,6 +31,11 @@ public class Owner : MonoBehaviour
     public event OnDied onDied;
 
     public LayerMask ValidMovementLayers;
+    public Goal TargetGoal
+    {
+        get;
+        private set;
+    }
 
     // Use this for initialization
     void Awake()
@@ -35,20 +44,29 @@ public class Owner : MonoBehaviour
     }
 
     // Use this for initialization
-    void Start ()
+    void Start()
     {
-        
-	}
-	
-	// Update is called once per frame
-	void Update ()
+
+    }
+
+    // Update is called once per frame
+    void Update()
     {
-		
-	}
+
+    }
 
     virtual public void OnRightMouse()
     {
 
+    }
+
+    virtual public void SetTargetGoal(Goal _targetGoal)
+    {
+        if (TargetGoal != null)
+            TargetGoal.RemoveOwner(this);
+
+        TargetGoal = _targetGoal;
+        TargetGoal.AddOwner(this);
     }
 
     /// <summary>
@@ -57,7 +75,7 @@ public class Owner : MonoBehaviour
     /// <param name="k">An int within Keycode corresponding to the key that was pressed</param>
     virtual public void OnKeyDown(KeyCode k)
     {
-        
+
     }
 
     /// <summary>
@@ -104,15 +122,19 @@ public class Owner : MonoBehaviour
     virtual protected void HandleDeath()
     {
         onDied(this);
+        if(this.TargetGoal != null)
+            TargetGoal.RemoveOwner(this);
         Destroy(gameObject);
     }
 }
 
 [System.Serializable]
-public class UniversalStats
+public struct UniversalStats
 {
-    public int Cost = 100;
-    public float BuildTime = 1.0f;
+    public int Cost;
+    public float BuildTime;
 
-    public int Health = 1;
+    public int Health;
+}
+
 }

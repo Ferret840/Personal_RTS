@@ -1,6 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TerrainData;
+
+namespace Selectable
+{
+    namespace Structures
+    {
 
 [RequireComponent(typeof(Collider))]
 public class NonTerrainObstacle : Owner
@@ -11,7 +17,8 @@ public class NonTerrainObstacle : Owner
 
     Vector3[] corners = new Vector3[4];
 
-    /*public */LayerMask dimension = 0;
+    /*public */
+    LayerMask dimension = 0;
 
     Vector3 m_BottomLeft, m_TopRight;
 
@@ -24,7 +31,7 @@ public class NonTerrainObstacle : Owner
     //}
 
     // Use this for initialization
-    void Start ()
+    void Start()
     {
         Init();
     }
@@ -41,10 +48,10 @@ public class NonTerrainObstacle : Owner
         GetCorners();
         CheckForBlockedTerrain();//DoesBlockTerrain(true);
     }
-    
+
     override protected void OnDestroy()
     {
-        if(exists)
+        if (exists)
             DoesBlockTerrain(false);
     }
 
@@ -126,5 +133,8 @@ public class NonTerrainObstacle : Owner
             foreach (Vector3 v in corners)
                 Gizmos.DrawSphere(v, 0.5f);
         }
+    }
+}
+
     }
 }

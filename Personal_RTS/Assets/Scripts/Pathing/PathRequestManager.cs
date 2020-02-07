@@ -4,6 +4,9 @@ using UnityEngine;
 using System;
 using System.Threading;
 
+namespace Pathing
+{
+
 public class PathRequestManager : MonoBehaviour
 {
     List<PathRequest> pathRequestQueue = new List<PathRequest>();
@@ -25,7 +28,7 @@ public class PathRequestManager : MonoBehaviour
     {
         //Debug.Log("Adding path request for: " + request.requester.name);
         instance.RemoveSameUnitRequest(request);
-            instance.pathRequestQueue.Add(request);
+        instance.pathRequestQueue.Add(request);
         instance.TryProcessNext();
     }
 
@@ -69,15 +72,15 @@ public class PathRequestManager : MonoBehaviour
         //        }
         //    }
         //}
-        if(results.Count > 0)
+        if (results.Count > 0)
         {
             PathResult result = results.Dequeue();
-            if (!result.success)
+            if (!result.Success)
             {
                 Debug.Log("Pathing failed due to: " + result.failReason);
                 //continue;
             }
-            result.callback(result.path, result.success);
+            result.callback(result.Path, result.Success);
         }
 
         instance.TryProcessNext();
@@ -92,8 +95,8 @@ public class PathRequestManager : MonoBehaviour
             {
                 PathRequest p = pathRequestQueue[0];
                 pathRequestQueue.RemoveAt(0);
-                //instance.pathfinding.FindPath(p, FinishedProcessingPath);
-            });
+            //instance.pathfinding.FindPath(p, FinishedProcessingPath);
+        });
             thread.Start();
         }
     }
@@ -102,7 +105,7 @@ public class PathRequestManager : MonoBehaviour
     {
         //lock (results)
         //{
-            results.Enqueue(result);
+        results.Enqueue(result);
         //}
         //result.callback(result.path, result.success);
         isProcessingPath = false;
@@ -112,15 +115,15 @@ public class PathRequestManager : MonoBehaviour
 
 public struct PathResult
 {
-    public Vector3[] path;
-    public bool success;
+    public Vector3[] Path;
+    public bool Success;
     public Action<Vector3[], bool> callback;
     public string failReason;
 
     public PathResult(Vector3[] _path, bool _success, Action<Vector3[], bool> _callback, string _failReason)
     {
-        path = _path;
-        success = _success;
+        Path = _path;
+        Success = _success;
         callback = _callback;
         failReason = _failReason;
     }
@@ -141,4 +144,6 @@ public struct PathRequest
         requester = _requester;
         dimension = _dimension;
     }
+}
+
 }

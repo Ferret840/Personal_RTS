@@ -4,8 +4,11 @@ using UnityEngine;
 using System.Diagnostics;
 using System;
 
-public class Pathfinding : MonoBehaviour
-{/*
+namespace Pathing
+{
+
+    public class Pathfinding : MonoBehaviour
+    {/*
     Grid grid;
 
     //Heap<Node> open = new Heap<Node>(0);
@@ -199,4 +202,6 @@ public class Pathfinding : MonoBehaviour
     //        Gizmos.DrawCube(n.worldPosition, Vector3.one * 0.5f);
     //    }
     //}*/
+    }
+
 }

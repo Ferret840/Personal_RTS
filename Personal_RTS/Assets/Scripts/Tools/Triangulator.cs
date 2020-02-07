@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+namespace Tools
+{
+
 //Credit: http://wiki.unity3d.com/index.php?title=Triangulator
 //Author: runevision
 
@@ -112,12 +115,18 @@ public class Triangulator
         float ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
         float cCROSSap, bCROSScp, aCROSSbp;
 
-        ax = C.x - B.x; ay = C.y - B.y;
-        bx = A.x - C.x; by = A.y - C.y;
-        cx = B.x - A.x; cy = B.y - A.y;
-        apx = P.x - A.x; apy = P.y - A.y;
-        bpx = P.x - B.x; bpy = P.y - B.y;
-        cpx = P.x - C.x; cpy = P.y - C.y;
+        ax = C.x - B.x;
+        ay = C.y - B.y;
+        bx = A.x - C.x;
+        by = A.y - C.y;
+        cx = B.x - A.x;
+        cy = B.y - A.y;
+        apx = P.x - A.x;
+        apy = P.y - A.y;
+        bpx = P.x - B.x;
+        bpy = P.y - B.y;
+        cpx = P.x - C.x;
+        cpy = P.y - C.y;
 
         aCROSSbp = ax * bpy - ay * bpx;
         cCROSSap = cx * apy - cy * apx;
@@ -125,4 +134,6 @@ public class Triangulator
 
         return ((aCROSSbp >= 0.0f) && (bCROSScp >= 0.0f) && (cCROSSap >= 0.0f));
     }
+}
+
 }

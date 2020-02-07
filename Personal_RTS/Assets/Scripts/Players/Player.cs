@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace Players
+{
+
 public class Player
 {
     int PlayerNumber;
@@ -30,15 +33,17 @@ public class Player
         Selector.PlayerNumber = PlayerNumber;
     }
 
-	// Use this for initialization
-	void Start ()
+    // Use this for initialization
+    void Start()
     {
-		
-	}
-	
-	// Update is called once per frame
-	void Update ()
+
+    }
+
+    // Update is called once per frame
+    void Update()
     {
-		
-	}
+
+    }
+}
+
 }

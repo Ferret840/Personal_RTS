@@ -1,6 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Selectable;
+using Pathing;
+using Selectable.Units;
+using Tools;
+
+namespace Players
+{
 
 [RequireComponent(typeof(Camera))]
 public class UnitSelection : MonoBehaviour
@@ -10,8 +17,8 @@ public class UnitSelection : MonoBehaviour
     public LayerMask SelectionLayer;
 
     //public float ClickToHoldTime = 0.25f;
-    bool IsDragging = false;
-    Vector3 MouseStartPos = Vector3.zero;
+    bool isDragging = false;
+    Vector3 mouseStartPos = Vector3.zero;
 
     Camera cam;
 
@@ -21,39 +28,39 @@ public class UnitSelection : MonoBehaviour
         private set;
     }
 
-    List<Unit> AllControlledUnits;// = new List<List<Unit>>(8);
+    List<Unit> allControlledUnits;// = new List<List<Unit>>(8);
 
-    Owner PreviousMouseover;
+    Owner previousMouseover;
 
     public void AddUnit(Unit u)
     {
-        AllControlledUnits.Add(u);
+        allControlledUnits.Add(u);
     }
 
     public void RemoveUnit(Unit u)
     {
-        AllControlledUnits.Remove(u);
+        allControlledUnits.Remove(u);
     }
 
-    public KeyCode[] keycodes = new KeyCode[0];
+    public KeyCode[] Keycodes = new KeyCode[0];
 
     //Vector2 clickLoc = Vector2.zero;
-    public Vector2 minDragSize = Vector2.one * 10;
+    public Vector2 MinDragSize = Vector2.one * 10;
 
     private void Awake()
     {
         selectedObjects = new HashSet<Owner>();
-        AllControlledUnits = new List<Unit>();
+        allControlledUnits = new List<Unit>();
     }
 
     // Use this for initialization
-    void Start ()
+    void Start()
     {
         cam = gameObject.GetComponent<Camera>();
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    }
+
+    // Update is called once per frame
+    void Update()
     {
         SelectionLayer = cam.cullingMask - 1;
 
@@ -69,36 +76,63 @@ public class UnitSelection : MonoBehaviour
     {
         if (Input.GetButtonDown("SelectDeselect"))
         {
-            MouseStartPos = Input.mousePosition;
+            mouseStartPos = Input.mousePosition;
         }
         else if (Input.GetButton("SelectDeselect") == true)
         {
-            if (IsDragging == false && (Input.mousePosition - MouseStartPos).sqrMagnitude > minDragSize.sqrMagnitude)
+            if (isDragging == false && (Input.mousePosition - mouseStartPos).sqrMagnitude > MinDragSize.sqrMagnitude)
             {
-                IsDragging = true;
+                isDragging = true;
                 StartCoroutine(DragHighlight());
             }
         }
         else if (Input.GetButtonUp("SelectDeselect"))
         {
-            if (IsDragging == false)
+            if (isDragging == false)
             {
                 ClickSelect();
             }
             else
             {
-                IsDragging = false;
+                isDragging = false;
             }
         }
 
         if (Input.GetButtonDown("GiveCommand"))
         {
+            //Do collision detection to see if the mouse is over a target or not.
+
+            //For now, all commands will assume a simple move command
+
+            List<Owner>[] selectedDims = new List<Owner>[3] { new List<Owner>(), new List<Owner>(), new List<Owner>() };
+
             foreach (Owner o in selectedObjects)
             {
-                o.OnRightMouse();
+                selectedDims[o.gameObject.layer - 8].Add(o);
+            }
+
+            for (int i = 0; i < 3; ++i)
+            {
+                if (selectedDims[i].Count == 0)
+                    continue;
+
+                RaycastHit hit;
+                Camera cam = Camera.main;
+                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit, 1024f))
+                {
+                    Goal newGoal = new Goal(PlayerNumber, (char)i, hit.point);
+
+                    foreach (Owner o in selectedDims[i])
+                    {
+                        o.SetTargetGoal(newGoal);
+
+                        o.OnRightMouse();
+                    }
+                }
             }
         }
-        
+
         if (Input.GetButton("SelectDeselect") == false && Input.GetButton("GiveCommand") == false)
         {
             MouseOver();
@@ -107,7 +141,7 @@ public class UnitSelection : MonoBehaviour
 
     void HandleKeyboardInput()
     {
-        foreach (KeyCode k in keycodes)
+        foreach (KeyCode k in Keycodes)
         {
             if (Input.GetKeyDown(k))
             {
@@ -132,7 +166,7 @@ public class UnitSelection : MonoBehaviour
     void ClickSelect()
     {
         RaycastHit hit;
-        Ray ray = cam.ScreenPointToRay(MouseStartPos);
+        Ray ray = cam.ScreenPointToRay(mouseStartPos);
         Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
         RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
@@ -166,7 +200,7 @@ public class UnitSelection : MonoBehaviour
         }
         HashSet<Owner>.Enumerator e = selectedObjects.GetEnumerator();
         e.MoveNext();
-        if(selectedObjects.Count > 0 && closest.PlayerNumber != e.Current.PlayerNumber)
+        if (selectedObjects.Count > 0 && closest.PlayerNumber != e.Current.PlayerNumber)
         {
             DeselectOld();
         }
@@ -211,15 +245,15 @@ public class UnitSelection : MonoBehaviour
             }
         }
 
-        if (PreviousMouseover != null)
-            PreviousMouseover.SetHighlighted(false);
+        if (previousMouseover != null)
+            previousMouseover.SetHighlighted(false);
 
         if (closest == null)
         {
             return;
         }
 
-        PreviousMouseover = closest;
+        previousMouseover = closest;
 
         closest.SetHighlighted(true);
     }
@@ -236,7 +270,7 @@ public class UnitSelection : MonoBehaviour
         while (Input.GetButton("SelectDeselect"))
         {
             //Get every Unit type object
-            foreach (Unit u in AllControlledUnits)
+            foreach (Unit u in allControlledUnits)
             {
                 int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
                 int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
@@ -247,7 +281,7 @@ public class UnitSelection : MonoBehaviour
                     highlightedUnits.Add(u);
                     //Don't highlight if already selected
                     //if(selectedObjects.Contains(u.GetComponent<Owner>()) == false)
-                        u.SetHighlighted(true);
+                    u.SetHighlighted(true);
                 }
                 else
                 {
@@ -326,126 +360,21 @@ public class UnitSelection : MonoBehaviour
     /// <returns>Returns True if the position is within the selection bounds</returns>
     public bool IsWithinSelectionBounds(GameObject gameObject)
     {
-        var viewportBounds = Utils.GetViewportBounds(cam, MouseStartPos, Input.mousePosition);
+        var viewportBounds = Utils.GetViewportBounds(cam, mouseStartPos, Input.mousePosition);
 
         return viewportBounds.Contains(cam.WorldToViewportPoint(gameObject.transform.position));
     }
 
     void OnGUI()
     {
-        if (IsDragging)
+        if (isDragging)
         {
             // Create a rect from both mouse positions
-            var rect = Utils.GetScreenRect(MouseStartPos, Input.mousePosition);
+            var rect = Utils.GetScreenRect(mouseStartPos, Input.mousePosition);
             //Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
             Utils.DrawScreenRectBorder(rect, 2, new Color(0.8f, 0.8f, 0.95f));
         }
     }
 }
 
-public static class Utils
-{
-    static Texture2D _whiteTexture;
-    public static Texture2D WhiteTexture
-    {
-        get
-        {
-            if (_whiteTexture == null)
-            {
-                _whiteTexture = new Texture2D(1, 1);
-                _whiteTexture.SetPixel(0, 0, Color.white);
-                _whiteTexture.Apply();
-            }
-
-            return _whiteTexture;
-        }
-    }
-
-    public static void DrawScreenRect(Rect rect, Color color)
-    {
-        GUI.color = color;
-        GUI.DrawTexture(rect, WhiteTexture);
-        GUI.color = Color.white;
-    }
-
-    public static void DrawScreenRectBorder(Rect rect, float thickness, Color color)
-    {
-        // Top
-        Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), color);
-        // Left
-        Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), color);
-        // Right
-        Utils.DrawScreenRect(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), color);
-        // Bottom
-        Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), color);
-    }
-
-    public static Rect GetScreenRect(Vector3 screenPosition1, Vector3 screenPosition2)
-    {
-        // Move origin from bottom left to top left
-        screenPosition1.y = Screen.height - screenPosition1.y;
-        screenPosition2.y = Screen.height - screenPosition2.y;
-        // Calculate corners
-        var topLeft = Vector3.Min(screenPosition1, screenPosition2);
-        var bottomRight = Vector3.Max(screenPosition1, screenPosition2);
-        // Create Rect
-        return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-    }
-
-    public static Bounds GetViewportBounds(Camera camera, Vector3 screenPosition1, Vector3 screenPosition2)
-    {
-        var v1 = Camera.main.ScreenToViewportPoint(screenPosition1);
-        var v2 = Camera.main.ScreenToViewportPoint(screenPosition2);
-        var min = Vector3.Min(v1, v2);
-        var max = Vector3.Max(v1, v2);
-        min.z = camera.nearClipPlane;
-        max.z = camera.farClipPlane;
-
-        var bounds = new Bounds();
-        bounds.SetMinMax(min, max);
-        return bounds;
-    }
-
-    /// <summary>
-    /// Takes a LayerMask and converts it to an int containing which dimensions are exposed to that LayerMask.
-    /// (i.e. It can see Dimension 1 and/or Dimension 2)
-    /// </summary>
-    /// <param name="original">The original LayerMask value</param>
-    /// <returns>Returns an int containing the exposed dimensions</returns>
-    public static int LayerMaskToInt(LayerMask original)
-    {
-        int dim = 0;
-
-        if ((original & (1 << 8)) != 0)
-            dim |= 1;
-        if ((original & (1 << 9)) != 0)
-            dim |= 2;
-
-        return dim;
-    }
-
-    /// <summary>
-    /// Converts the given Layer of an object to which dimension the object exists in.
-    /// (i.e. It's in Dimension 1, 2, or Both (3))
-    /// </summary>
-    /// <param name="original">The original Layer value of the object</param>
-    /// <returns>Returns the game logic value for dimensions</returns>
-    public static int ObjectLayerToInt(int original)
-    {
-        int dim = 0;
-
-        if (original == 8)
-            dim |= 1;
-        if (original == 9)
-            dim |= 2;
-        if (original == 10)
-            dim |= 3;
-
-        return dim;
-    }
-
-    public static int IntToLayer(int original)
-    {
-        return original + 7;
-    }
 }

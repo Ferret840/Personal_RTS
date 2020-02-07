@@ -2,14 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
+using Tools;
+
+namespace TerrainData
+{
 
 public class Grid : MonoBehaviour
 {
-    public static Logger logger = new Logger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
+    public static CustomLogger logger = new CustomLogger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
 
     public static Grid GetGrid
     {
-        get { return grid_Instance; }
+        get
+        {
+            return grid_Instance;
+        }
     }
 
     static Grid grid_Instance;
@@ -27,7 +34,16 @@ public class Grid : MonoBehaviour
     //Node[,] grid;
 
     float nodeDiameter;
-    int gridSizeX, gridSizeY;
+    public int gridSizeX
+    {
+        get;
+        private set;
+    }
+    public int gridSizeY
+    {
+        get;
+        private set;
+    }
     public int xSectorCount
     {
         get;
@@ -38,16 +54,18 @@ public class Grid : MonoBehaviour
         get;
         private set;
     }
-    int nodesPerSector;
-    
+    public int nodesPerSector
+    {
+        get;
+        private set;
+    }
+
     public int SectorSize = 10;
     public Sector[,,] GridSectors
     {
         get;
         private set;
     }
-
-    public List<Node> debugPath = new List<Node>();
 
     public LayerMask dim1;
     public LayerMask dim2;
@@ -135,7 +153,7 @@ public class Grid : MonoBehaviour
         return GetWalkableAt(dim, xCoord, yCoord);
     }
 
-    bool GetWalkableAt(char dim, int xCoord, int yCoord)
+    public bool GetWalkableAt(char dim, int xCoord, int yCoord)
     {
         if (dim > 2)
             throw new InvalidDimensionException(dim);
@@ -190,7 +208,7 @@ public class Grid : MonoBehaviour
     {
         //try
         //{
-            GridSectors[dim, CoordToSectorNumber(x), CoordToSectorNumber(y)].SetWalkableAt(x % nodesPerSector, y % nodesPerSector, newCanWalk);
+        GridSectors[dim, CoordToSectorNumber(x), CoordToSectorNumber(y)].SetWalkableAt(x % nodesPerSector, y % nodesPerSector, newCanWalk);
         //}
         //catch (System.IndexOutOfRangeException)
         //{
@@ -248,19 +266,19 @@ public class Grid : MonoBehaviour
                 //New thread
                 Thread t = new Thread(delegate ()
                 {
-                    //If not the shared dimension, update just their own
-                    if (dimension != 2)
+                //If not the shared dimension, update just their own
+                if (dimension != 2)
                     {
                         GridSectors[dimension, locX, locY].UpdateSubsectors();
                     }
-                    //Else, this is the shared dimension and both other dimensions need to be updated
-                    else//if (dimension == 2)
-                    {
+                //Else, this is the shared dimension and both other dimensions need to be updated
+                else//if (dimension == 2)
+                {
                         GridSectors[0, locX, locY].UpdateSubsectors();
                         GridSectors[1, locX, locY].UpdateSubsectors();
                     }
-                    //The shared dimension is always updated
-                    GridSectors[2, locX, locY].UpdateSubsectors();
+                //The shared dimension is always updated
+                GridSectors[2, locX, locY].UpdateSubsectors();
                 }
                 );
                 //Add the new thread and the location to the queues
@@ -285,17 +303,17 @@ public class Grid : MonoBehaviour
                 //New thread
                 Thread t = new Thread(delegate ()
                 {
-                    //If not the shared dimension, update just their own
-                    if (dimension != 2)
+                //If not the shared dimension, update just their own
+                if (dimension != 2)
                     {
                         foreach (Sector.SubSector s in GridSectors[dimension, locX, locY].subs)
                         {
                             s.UpdateConnectedSubsectors();
                         }
                     }
-                    //Else, this is the shared dimension and both other dimensions need to be updated
-                    else//if (dimension == 2)
-                    {
+                //Else, this is the shared dimension and both other dimensions need to be updated
+                else//if (dimension == 2)
+                {
                         foreach (Sector.SubSector s in GridSectors[0, locX, locY].subs)
                         {
                             s.UpdateConnectedSubsectors();
@@ -305,8 +323,8 @@ public class Grid : MonoBehaviour
                             s.UpdateConnectedSubsectors();
                         }
                     }
-                    //The shared dimension is always updated
-                    foreach (Sector.SubSector s in GridSectors[2, locX, locY].subs)
+                //The shared dimension is always updated
+                foreach (Sector.SubSector s in GridSectors[2, locX, locY].subs)
                     {
                         s.UpdateConnectedSubsectors();
                     }
@@ -364,7 +382,7 @@ public class Grid : MonoBehaviour
     {
         int xBL, yBL;
         NodeFromWorldPoint(bottomLeft, out xBL, out yBL);
-        
+
         int xTR, yTR;
         NodeFromWorldPoint(topRight, out xTR, out yTR);
 
@@ -372,7 +390,7 @@ public class Grid : MonoBehaviour
         {
             for (int x = xBL; x <= xTR; ++x)
             {
-                if(!GetWalkableAt(dimension, x, y))
+                if (!GetWalkableAt(dimension, x, y))
                     return true;
             }
         }
@@ -382,7 +400,10 @@ public class Grid : MonoBehaviour
 
     public int MaxSize
     {
-        get { return gridSizeX * gridSizeY; }
+        get
+        {
+            return gridSizeX * gridSizeY;
+        }
     }
 
     void CreateGrid()
@@ -442,10 +463,10 @@ public class Grid : MonoBehaviour
 
     void GenerateSectors(LayerMask mask)
     {
-        //Logger logger = new Logger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
+        //CustomLogger logger = new CustomLogger(@"C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Assets\Logs\SectorLog.log");
         for (int x = 0; x < ((int)gridWorldSize.x - 1) / SectorSize + 1; ++x)
         {
-            for (int y = 0; y < ((int)gridWorldSize.y - 1)/ SectorSize + 1; ++y)
+            for (int y = 0; y < ((int)gridWorldSize.y - 1) / SectorSize + 1; ++y)
             {
                 Vector3 worldPoint = transform.position + Vector3.right * ((x * SectorSize) + nodeRadius) + Vector3.forward * ((y * SectorSize) + nodeRadius);
 
@@ -463,15 +484,17 @@ public class Grid : MonoBehaviour
         }
     }
 
-    public void NodeFromWorldPoint(Vector3 worldPosition, out int xPos, out int yPos)
+    static public void NodeFromWorldPoint(Vector3 worldPosition, out int xPos, out int yPos)
     {
-        float percentX = worldPosition.x / gridWorldSize.x;
-        float percentY = worldPosition.z / gridWorldSize.y;
+        Grid g = grid_Instance;
+
+        float percentX = worldPosition.x / g.gridWorldSize.x;
+        float percentY = worldPosition.z / g.gridWorldSize.y;
         percentX = Mathf.Clamp01(percentX);
         percentY = Mathf.Clamp01(percentY);
 
-        int x = Mathf.RoundToInt((gridSizeX - 1) * percentX);
-        int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
+        int x = Mathf.RoundToInt((g.gridSizeX - 1) * percentX);
+        int y = Mathf.RoundToInt((g.gridSizeY - 1) * percentY);
 
         xPos = x;//(int)(x / nodeDiameter);
         yPos = y;//(int)(y / nodeDiameter);
@@ -515,7 +538,7 @@ public class Grid : MonoBehaviour
                             Gizmos.color = s.subSectorColor;
                             try
                             {
-                                if(s.mesh != null)
+                                if (s.mesh != null)
                                     Gizmos.DrawMesh(s.mesh, Vector3.right * SectorSize * x + Vector3.forward * SectorSize * y + Vector3.up * 0.001f, Quaternion.Euler(90, 0, 0), Vector3.one * nodeDiameter);
                                 else
                                 {
@@ -628,18 +651,4 @@ class SubsectorMeshException : System.Exception
     }
 }
 
-public class Pair<T, U>
-{
-    public Pair()
-    {
-    }
-
-    public Pair(T first, U second)
-    {
-        this.First = first;
-        this.Second = second;
-    }
-
-    public T First { get; set; }
-    public U Second { get; set; }
-};
+}

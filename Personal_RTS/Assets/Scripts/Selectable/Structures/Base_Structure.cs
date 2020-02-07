@@ -2,16 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace Selectable
+{
+    namespace Structures
+    {
+
 public class Base_Structure : NonTerrainObstacle
 {
     // Use this for initialization
     void Start()
     {
         Init();
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    }
+
+    // Update is called once per frame
+    void Update()
     {
         if (IsSelected && Input.GetKeyDown(KeyCode.Delete))
         {
@@ -37,5 +42,8 @@ public class Base_Structure : NonTerrainObstacle
     {
         base.SetHighlighted(IsHighlighted);
         //owner.HighlightedEffect.SetActive(IsHighlighted);
+    }
+}
+
     }
 }

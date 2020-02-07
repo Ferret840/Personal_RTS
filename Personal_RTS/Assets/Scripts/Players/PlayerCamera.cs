@@ -1,6 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Selectable;
+
+namespace Players
+{
 
 [RequireComponent(typeof(Camera))]
 public class PlayerCamera : MonoBehaviour
@@ -22,16 +26,16 @@ public class PlayerCamera : MonoBehaviour
     float visualEffectDuration = 0f;
 
     // Use this for initialization
-    void Start ()
+    void Start()
     {
         cam = GetComponent<Camera>();
         cam.targetDisplay = PlayerNumber;
 
         view = dimensions[viewIndex];
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    }
+
+    // Update is called once per frame
+    void Update()
     {
         HandleInput();
     }
@@ -127,7 +131,7 @@ public class PlayerCamera : MonoBehaviour
 
             yield return null;
         }
-        
+
         cam.cullingMask = view;
 
         for (i = 0; i < EffectMaxDuration / 2; i += Time.deltaTime, visualEffectDuration -= Time.deltaTime)
@@ -149,4 +153,6 @@ public class PlayerCamera : MonoBehaviour
             Graphics.Blit(source, destination);
         }
     }
+}
+
 }

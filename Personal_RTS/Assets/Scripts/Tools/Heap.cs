@@ -2,6 +2,9 @@
 using UnityEngine;
 using System;
 
+namespace Tools
+{
+
 public class Heap<T> where T : IHeapItem<T>
 {
     T[] items;
@@ -39,7 +42,10 @@ public class Heap<T> where T : IHeapItem<T>
 
     public int Count
     {
-        get { return currentItemCount; }
+        get
+        {
+            return currentItemCount;
+        }
     }
 
     public bool Contains(T item)
@@ -55,19 +61,19 @@ public class Heap<T> where T : IHeapItem<T>
             int rightIndex = item.HeapIndex * 2 + 2;
             int swapIndex = 0;
 
-            if(leftIndex < currentItemCount)
+            if (leftIndex < currentItemCount)
             {
                 swapIndex = leftIndex;
 
                 if (rightIndex < currentItemCount)
                 {
-                    if(items[leftIndex].CompareTo(items[rightIndex]) < 0)
+                    if (items[leftIndex].CompareTo(items[rightIndex]) < 0)
                     {
                         swapIndex = rightIndex;
                     }
                 }
 
-                if(item.CompareTo(items[swapIndex]) < 0)
+                if (item.CompareTo(items[swapIndex]) < 0)
                 {
                     Swap(item, items[swapIndex]);
                 }
@@ -87,7 +93,7 @@ public class Heap<T> where T : IHeapItem<T>
     {
         int parentIndex = (item.HeapIndex - 1) / 2;
 
-        while(true)
+        while (true)
         {
             T parentItem = items[parentIndex];
 
@@ -128,4 +134,6 @@ public interface IHeapItem<T> : IComparable<T>
         get;
         set;
     }
+}
+
 }

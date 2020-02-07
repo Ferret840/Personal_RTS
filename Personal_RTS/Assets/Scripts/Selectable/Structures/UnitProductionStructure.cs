@@ -1,6 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Selectable.Units;
+using Tools;
+
+namespace Selectable
+{
+    namespace Structures
+    {
 
 public class UnitProductionStructure : Base_Structure
 {
@@ -10,36 +17,26 @@ public class UnitProductionStructure : Base_Structure
     //public UnitVariables[] SpawnObject = new UnitVariables[0];
     public ProductionInfo[] SpawnObjects = new ProductionInfo[0];
 
-    Vector3 RallyPointLocation = Vector3.one;
-
     //Queue<UnitVariables> queuedUnits = new Queue<UnitVariables>();
     Queue<ProductionInfo> unitQueue = new Queue<ProductionInfo>();
 
-    float BuildPercent = 1;
+    float buildPercent = 1;
 
-	// Use this for initialization
-	void Start ()
+    // Use this for initialization
+    void Start()
     {
         Init();
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    }
+
+    // Update is called once per frame
+    void Update()
     {
-		
-	}
+
+    }
 
     override public void OnRightMouse()
     {
         base.OnRightMouse();
-
-        RaycastHit hit;
-        Camera cam = Camera.main;
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, 512f, ValidMovementLayers))
-        {
-            RallyPointLocation = hit.point;
-        }
     }
 
     /// <summary>
@@ -53,7 +50,7 @@ public class UnitProductionStructure : Base_Structure
             //queuedUnits.Enqueue(SpawnObject[k - KeyCode.Keypad0]);
             //if (queuedUnits.Count > 1)
             unitQueue.Enqueue(SpawnObjects[k - KeyCode.Keypad0]);
-            if(unitQueue.Count == 1)
+            if (unitQueue.Count == 1)
             {
                 StartCoroutine(BuildUnit());
             }
@@ -88,8 +85,8 @@ public class UnitProductionStructure : Base_Structure
             ProductionInfo o = unitQueue.Peek();
             for (float i = 0; i < o.UnivStats.BuildTime; i += Time.deltaTime)
             {
-                BuildPercent = i / o.UnivStats.BuildTime;
-                Debug.Log("Training: " + (BuildPercent * 100).ToString("F2") + "%");
+                buildPercent = i / o.UnivStats.BuildTime;
+                Debug.Log("Training: " + (buildPercent * 100).ToString("F2") + "%");
 
                 yield return null;
             }
@@ -102,7 +99,7 @@ public class UnitProductionStructure : Base_Structure
 
             Debug.Log("Unit created");
             yield return new WaitForSeconds(2);
-            unitComp.SetMoveLocation(RallyPointLocation);
+            unitComp.SetTargetGoal(TargetGoal);
 
             unitQueue.Dequeue();
         }
@@ -110,8 +107,11 @@ public class UnitProductionStructure : Base_Structure
 }
 
 [System.Serializable]
-public class ProductionInfo
+public struct ProductionInfo
 {
     public UniversalStats UnivStats;
     public UnitVariables UnitVar;
+}
+
+    }
 }

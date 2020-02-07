@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
 
-public class Logger
+namespace Tools
 {
 
-    public Logger(string logFilePath)
+public class CustomLogger
+{
+    public CustomLogger(string logFilePath)
     {
         if (!logFilePath.EndsWith(".log"))
             logFilePath += ".log";
@@ -14,12 +16,16 @@ public class Logger
         WriteLine("New Session Started");
     }
 
-    public string LogFilePath { get; private set; }
+    public string LogFilePath
+    {
+        get; private set;
+    }
 
     public void WriteLine(object message)
     {
         using (StreamWriter writer = new StreamWriter(LogFilePath, true))
             writer.WriteLine(DateTime.Now.ToString() + ": " + message.ToString());
     }
+}
 
 }

@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace TerrainData
+{
 
-public class DimensionManager : MonoBehaviour
-{/*
+    public class DimensionManager : MonoBehaviour
+    {/*
     Grid[] grids;// = new List<Grid>();
 
     static public DimensionManager instance;
@@ -27,4 +29,6 @@ public class DimensionManager : MonoBehaviour
     {
         return instance.grids[i];
     }*/
+    }
+
 }
