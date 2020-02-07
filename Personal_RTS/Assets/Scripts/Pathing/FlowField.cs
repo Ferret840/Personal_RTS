@@ -52,10 +52,10 @@ namespace Pathing
                             }
                         }
                     }
-    
+
                     //Because Unity is stupid and circle start at up and rotate clockwise
                     if (minD == ushort.MaxValue)
-                        grid[x, y] = Random.Range(-180f, 180f);
+                        grid[x, y] = 0;
                     else if (minX == 1 && minY == 0)
                         grid[x, y] = 90;
                     else if (minX == -1 && minY == 0)
