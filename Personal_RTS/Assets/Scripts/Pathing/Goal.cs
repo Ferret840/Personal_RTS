@@ -7,16 +7,21 @@ using System.Threading;
 
 namespace Pathing
 {
-
     public class Goal
     {
+        static readonly int iFlowField_Thread_Count = SystemInfo.processorCount;
+
         //int PlayerNum;
         public char Dimension
         {
             get;
             private set;
         }
-        Vector3 position;
+        public Vector3 position
+        {
+            get;
+            private set;
+        }
 
         IntegrationField iField;
         FlowField fField;
@@ -67,7 +72,7 @@ namespace Pathing
 
                 iField = new IntegrationField(this);
 
-                fField = new FlowField(iField);
+                fField = new FlowField(iField, iFlowField_Thread_Count);
             });
 
             calculateThread.Start();

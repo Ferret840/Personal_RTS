@@ -14,18 +14,25 @@ namespace Pathing
 
         public IntegrationField(Goal _goal)
         {
+            System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+
+            timer.Start();
+
             goal = _goal;
 
             Grid g = Grid.GetGrid;
 
             grid = new IFieldNode[g.xSectorCount, g.ySectorCount][,];
 
+            int lastSectorRemainderX = (int)(g.gridWorldSize.x % g.nodesPerSector), 
+                lastSectorRemainderY = (int)(g.gridWorldSize.y % g.nodesPerSector);
+
             for (int xS = 0; xS < g.xSectorCount; ++xS)
             {
                 for (int yS = 0; yS < g.ySectorCount; ++yS)
                 {
-                    int xSize = (int)((xS + 1) * g.SectorSize <= g.gridWorldSize.x ? g.nodesPerSector : g.gridWorldSize.x % g.nodesPerSector),
-                        ySize = (int)((yS + 1) * g.SectorSize <= g.gridWorldSize.y ? g.nodesPerSector : g.gridWorldSize.y % g.nodesPerSector);
+                    int xSize = (xS + 1) * g.SectorSize <= g.gridWorldSize.x ? g.nodesPerSector : lastSectorRemainderX,
+                        ySize = (yS + 1) * g.SectorSize <= g.gridWorldSize.y ? g.nodesPerSector : lastSectorRemainderY;
 
                     grid[xS, yS] = new IFieldNode[xSize, ySize];
 
@@ -38,8 +45,13 @@ namespace Pathing
                     }
                 }
             }
-
+            UnityEngine.Debug.Log("Integration Field Allocation: " + timer.ElapsedMilliseconds + "ms");
+            timer.Reset();
+            timer.Start();
             Calculate();
+
+            timer.Stop();
+            UnityEngine.Debug.Log("Integration Field Calculation: " + timer.ElapsedMilliseconds + "ms");
         }
 
         void Calculate()
@@ -48,7 +60,8 @@ namespace Pathing
 
             IFieldNode n = grid[goal.xSector, goal.ySector][goal.xPos, goal.yPos];
 
-            Queue<IFieldNode> openList = new Queue<IFieldNode>();
+            int circumference = (int)(Mathf.Min(g.gridSizeX, g.gridSizeY) * 2 * Mathf.PI);
+            Queue<IFieldNode> openList = new Queue<IFieldNode>(circumference);
 
             n.Distance = 0;
 
@@ -65,14 +78,14 @@ namespace Pathing
                     if (neighbor.Used)
                         continue;
 
-                    neighbor.Distance = (ushort)(n.Distance + 1);
+                    neighbor.Distance = n.Distance + 1;
                     neighbor.Used = true;
                     openList.Enqueue(neighbor);
                 }
             }
         }
 
-        public ushort this[int x, int y]
+        public int this[int x, int y]
         {
             get
             {
@@ -84,7 +97,7 @@ namespace Pathing
 
         protected class IFieldNode
         {
-            public ushort Distance = ushort.MaxValue;
+            public int Distance = int.MaxValue;
             int xPos, yPos;
             IntegrationField iField;
             public bool Used = false;
@@ -117,14 +130,7 @@ namespace Pathing
                         {
                             //int atX = (int)((checkX + 1) * g.SectorSize <= g.gridWorldSize.x ? g.SectorSize / (g.nodeRadius * 2) : g.gridWorldSize.x % g.SectorSize / (g.nodeRadius * 2)),
                             //    atY = (int)((checkY + 1) * g.SectorSize <= g.gridWorldSize.y ? g.SectorSize / (g.nodeRadius * 2) : g.gridWorldSize.y % g.SectorSize / (g.nodeRadius * 2));
-                            try
-                            {
-                                neighbors.Add(iField.grid[checkX / g.nodesPerSector, checkY / g.nodesPerSector][checkX % g.nodesPerSector, checkY % g.nodesPerSector]);
-                            }
-                            catch
-                            {
-                                Debug.Log(string.Format("CheckX {0}, CheckY {1}, NodesPerSector {2}", checkX, checkY, g.nodesPerSector));
-                            }
+                            neighbors.Add(iField.grid[checkX / g.nodesPerSector, checkY / g.nodesPerSector][checkX % g.nodesPerSector, checkY % g.nodesPerSector]);
                         }
                     }
                 }

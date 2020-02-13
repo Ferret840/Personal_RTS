@@ -75,20 +75,32 @@ namespace Selectable
             {
                 float moveDirection = TargetGoal.GetDirFromPosition(transform.position);
 
+                Rigidbody rigid = GetComponent<Rigidbody>();
+                //rigid.mass /= 10;
+                rigid.drag = 0;
+
                 while (moveDirection != 1000f)
                 {
-                    if (moveDirection == ushort.MaxValue)
+                    if (moveDirection == int.MaxValue)
                         break;
 
                     transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0, moveDirection, 0), stats.turnSpeed);
                     //transform.rotation = Quaternion.Euler(0, moveDirection, 0);
 
-                    transform.Translate(Vector3.forward * Time.deltaTime * stats.speed, Space.Self);
+                    rigid.AddForce(transform.forward * stats.speed, ForceMode.VelocityChange);
+                    rigid.velocity = rigid.velocity.normalized * stats.speed * Time.deltaTime;
+                    //transform.Translate(Vector3.forward * Time.deltaTime * stats.speed, Space.Self);
 
                     moveDirection = TargetGoal.GetDirFromPosition(transform.position);
 
                     yield return null;
+
+                    if ((transform.position - TargetGoal.position).sqrMagnitude < transform.position.y + 1f)
+                        break;
                 }
+                rigid.velocity = Vector3.zero;
+                //rigid.mass *= 10;
+                rigid.drag = 10;
             }
 
             override public void Deselect()
