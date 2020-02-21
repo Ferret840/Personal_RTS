@@ -12,11 +12,7 @@ namespace Pathing
         static readonly int iFlowField_Thread_Count = SystemInfo.processorCount;
 
         //int PlayerNum;
-        public char Dimension
-        {
-            get;
-            private set;
-        }
+        public char Dimension;
         public Vector3 position
         {
             get;
