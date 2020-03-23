@@ -76,6 +76,7 @@ namespace Selectable
                 float moveDirection = TargetGoal.GetDirFromPosition(transform.position);
 
                 Rigidbody rigid = GetComponent<Rigidbody>();
+                CapsuleCollider collider = GetComponent<CapsuleCollider>();
                 //rigid.mass /= 10;
                 rigid.drag = 0;
 
@@ -95,7 +96,7 @@ namespace Selectable
 
                     yield return null;
 
-                    if ((transform.position - TargetGoal.position).sqrMagnitude < transform.position.y + 1f)
+                    if (collider.bounds.SqrDistance(TargetGoal.position) < collider.radius)
                         break;
                 }
                 rigid.velocity = Vector3.zero;
