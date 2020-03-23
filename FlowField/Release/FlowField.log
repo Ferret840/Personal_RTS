@@ -1,0 +1,9 @@
+﻿  FlowField.cpp
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(64): error C2059: syntax error: '__declspec(dllimport)'
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(65): error C2334: unexpected token(s) preceding '{'; skipping apparent function body
+  Goal.cpp
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(64): error C2059: syntax error: '__declspec(dllimport)'
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(65): error C2334: unexpected token(s) preceding '{'; skipping apparent function body
+  IntegrationField.cpp
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(64): error C2059: syntax error: '__declspec(dllimport)'
+c:\users\drago\documents\github\personal_rts\flowfield\goal.h(65): error C2334: unexpected token(s) preceding '{'; skipping apparent function body

@@ -63,10 +63,10 @@ namespace Selectable
         virtual public void SetTargetGoal(Goal _targetGoal)
         {
             if (TargetGoal != null)
-                TargetGoal.RemoveOwner(this);
+                TargetGoal.RemoveOwner(gameObject.GetInstanceID());
     
             TargetGoal = _targetGoal;
-            TargetGoal.AddOwner(this);
+            TargetGoal.AddOwner(gameObject.GetInstanceID());
         }
     
         /// <summary>
@@ -123,7 +123,7 @@ namespace Selectable
         {
             onDied(this);
             if(this.TargetGoal != null)
-                TargetGoal.RemoveOwner(this);
+                TargetGoal.RemoveOwner(gameObject.GetInstanceID());
             Destroy(gameObject);
         }
     }

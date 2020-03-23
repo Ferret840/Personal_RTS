@@ -1,99 +1,100 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Selectable;
-using TerrainData;
-using System.Threading;
+﻿using UnityEngine;
+using System.Runtime.InteropServices;
+using System;
 
 namespace Pathing
 {
     public class Goal
     {
-        static readonly int iFlowField_Thread_Count = SystemInfo.processorCount;
+        [DllImport("RTS_DLL", EntryPoint = "NewGoal")]
+        static extern IntPtr NewGoal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ);
 
-        //int PlayerNum;
-        public char Dimension;
+        [DllImport("RTS_DLL", EntryPoint = "GetDirFromPosition")]
+        static extern float GetDirFromPosition(IntPtr pGoal, float _posX, float _posY, float _posZ);
+
+        [DllImport("RTS_DLL", EntryPoint = "GetXPos")]
+        static extern int GetXPos(IntPtr pGoal);
+        [DllImport("RTS_DLL", EntryPoint = "GetYPos")]
+        static extern int GetYPos(IntPtr pGoal);
+        [DllImport("RTS_DLL", EntryPoint = "GetXSector")]
+        static extern int GetXSector(IntPtr pGoal);
+        [DllImport("RTS_DLL", EntryPoint = "GetYSector")]
+        static extern int GetYSector(IntPtr pGoal);
+        [DllImport("RTS_DLL", EntryPoint = "GetDimension")]
+        static extern char GetDimension(IntPtr pGoal);
+
+        [DllImport("RTS_DLL", EntryPoint = "AddOwner")]
+        static extern void AddOwner(IntPtr pGoal, int oID);
+        [DllImport("RTS_DLL", EntryPoint = "RemoveOwner")]
+        static extern void RemoveOwner(IntPtr pGoal, int oID);
+
+        IntPtr goalPtr;
+
         public Vector3 position
         {
             get;
             private set;
         }
 
-        IntegrationField iField;
-        FlowField fField;
-
-        HashSet<Owner> owners = new HashSet<Owner>();
-
         public int xPos
         {
-            get;
-            private set;
-        }
-        public int yPos
-        {
-            get;
-            private set;
-        }
-        public int xSector
-        {
-            get;
-            private set;
-        }
-        public int ySector
-        {
-            get;
-            private set;
+            get
+            {
+                return GetXPos(goalPtr);
+            }
         }
 
-        Thread calculateThread;
+        public int yPos
+        {
+            get
+            {
+                return GetYPos(goalPtr);
+            }
+        }
+
+        public int xSector
+        {
+            get
+            {
+                return GetXSector(goalPtr);
+            }
+        }
+
+        public int ySector
+        {
+            get
+            {
+                return GetYSector(goalPtr);
+            }
+        }
+
+        public char Dimension
+        {
+            get
+            {
+                return GetDimension(goalPtr);
+            }
+        }
 
         public Goal(int _playerNum, char _dimension, Vector3 _position)
         {
-            //PlayerNum = _playerNum;
-            Dimension = _dimension;
+            goalPtr = NewGoal(_playerNum, _dimension, _position.x, _position.y, _position.z);
             position = _position;
-            
-            calculateThread = new Thread(delegate ()
-            {
-                int x, y;
-                Grid g = Grid.GetGrid;
-
-                Grid.NodeFromWorldPoint(_position, out x, out y);
-
-                xPos = x % g.nodesPerSector;
-                yPos = y % g.nodesPerSector;
-
-                xSector = g.CoordToSectorNumber(x);
-                ySector = g.CoordToSectorNumber(y);
-
-                iField = new IntegrationField(this);
-
-                fField = new FlowField(iField, iFlowField_Thread_Count);
-            });
-
-            calculateThread.Start();
-        }
-
-        public void AddOwner(Owner o)
-        {
-            owners.Add(o);
-        }
-
-        public void RemoveOwner(Owner o)
-        {
-            owners.Remove(o);
         }
 
         public float GetDirFromPosition(Vector3 _position)
         {
-            if (calculateThread.IsAlive)
-                return Mathf.Atan2(position.x - _position.x, position.z - _position.z) * Mathf.Rad2Deg;
+            return GetDirFromPosition(goalPtr, _position.x, _position.y, _position.z);
+        }
 
-            int x, y;
+        public void AddOwner(int oID)
+        {
+            AddOwner(goalPtr, oID);
+        }
 
-            Grid.NodeFromWorldPoint(_position, out x, out y);
-
-            return fField[x, y];
+        public void RemoveOwner(int oID)
+        {
+            RemoveOwner(goalPtr, oID);
         }
     }
 

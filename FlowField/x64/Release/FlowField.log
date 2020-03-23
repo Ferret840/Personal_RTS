@@ -1,0 +1,12 @@
+﻿  stdafx.cpp
+  dllmain.cpp
+  FlowField.cpp
+  Goal.cpp
+  Grid.cpp
+  IntegrationField.cpp
+  Sector.cpp
+     Creating library C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.lib and object C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.exp
+  Generating code
+  All 1277 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  FlowField.vcxproj -> C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.dll
