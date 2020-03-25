@@ -23,7 +23,7 @@ namespace Pathing
     protected:
 
     public:
-      unsigned short Distance;
+      unsigned int Distance;
       bool Used;// = false;
 
       IFieldNode(int x, int y, IntegrationField* i);

@@ -347,8 +347,8 @@ namespace TerrainData
       gridSectors[d] = new Sector*[sectorCount.x];
       for (int x = 0; x < sectorCount.x; ++x)
       {
-        typedef std::aligned_storage<sizeof(Sector), std::alignment_of<Sector>::value>::type storage_type;
-        gridSectors[d][x] = reinterpret_cast<Sector*>(new storage_type[sectorCount.y]);
+        typedef std::aligned_storage<sizeof(Sector), std::alignment_of<Sector>::value>::type sectorStorage;
+        gridSectors[d][x] = reinterpret_cast<Sector*>(new sectorStorage[sectorCount.y]);
       }
     }
 
@@ -395,7 +395,8 @@ namespace TerrainData
       {
         for (int yS = 0; yS < sectorCount.y; ++yS)
           gridSectors[d][xS][yS].~Sector();
-        delete[] gridSectors[d][xS];
+         //delete[] gridSectors[d][xS];
+        ::operator delete(gridSectors[d][xS]);
       }
       delete[] gridSectors[d];
     }
@@ -433,7 +434,7 @@ namespace TerrainData
   Vector2<int> Grid::NodeFromWorldPoint(Vector3<float> worldPosition)
   {
     float percentX = worldPosition.X / worldSize.x;
-    float percentY = worldPosition.X / worldSize.y;
+    float percentY = worldPosition.Z / worldSize.y;
     percentX = clamp(percentX, 0.0f, 1.0f);
     percentY = clamp(percentY, 0.0f, 1.0f);
 

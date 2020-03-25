@@ -1,11 +1,16 @@
 #include "stdafx.h"
 #include "IntegrationField.h"
+#if _DEBUG
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#endif
 
 namespace Pathing
 {
   using namespace TerrainData;
 
-  IntegrationField::IFieldNode::IFieldNode(int x, int y, IntegrationField* i) :xPos(x), yPos(y), iField(i), Used(false), Distance(USHRT_MAX)
+  IntegrationField::IFieldNode::IFieldNode(int x, int y, IntegrationField* i) :xPos(x), yPos(y), iField(i), Used(false), Distance(UINT_MAX / 2)
   {}
 
   std::list<IntegrationField::IFieldNode*> IntegrationField::IFieldNode::GetNeighbors(char dim)
@@ -96,7 +101,7 @@ namespace Pathing
         {
           for (int y = 0; y < ySize; ++y)
             grid[i][j][x][y].~IFieldNode();
-          delete[] grid[i][j][x];
+          ::operator delete(grid[i][j][x]);
         }
         delete[] grid[i][j];
       }
@@ -121,6 +126,7 @@ namespace Pathing
     while (openList.size() > 0)
     {
       n = openList.front();
+      openList.pop();
 
       n->Used = true;
       std::list<IntegrationField::IFieldNode*> neighbors = n->GetNeighbors(goal->dimension);
@@ -134,6 +140,24 @@ namespace Pathing
         openList.push(*it);
       }
     }
+
+#if _DEBUG
+    std::ofstream myFile;
+    myFile.open("IntegrationFieldOutput.txt");
+
+    int lastSectorRemainderX = (int)g->getWorldSize().x % g->getNodesPerSector(),
+        lastSectorRemainderY = (int)g->getWorldSize().y % g->getNodesPerSector();
+
+    for (int y = g->getSectorCount().y * g->getNodesPerSector() + lastSectorRemainderY - 1; y >= 0; --y)
+    {
+      for (int x = 0; x < g->getSectorCount().x * g->getNodesPerSector() + lastSectorRemainderX; ++x)
+      {
+        myFile << std::setw(5) << grid[x / g->getNodesPerSector()][y / g->getNodesPerSector()][x % g->getNodesPerSector()][y % g->getNodesPerSector()].Distance << " - ";
+      }
+      myFile << std::endl;
+    }
+    myFile.close();
+#endif
   }
 
   int IntegrationField::GetDistAt(int x, int y)

@@ -1,4 +1,5 @@
-﻿  stdafx.cpp
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(377,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+  stdafx.cpp
   dllmain.cpp
   FlowField.cpp
   Goal.cpp
@@ -6,4 +7,5 @@
   IntegrationField.cpp
   Sector.cpp
   Generating Code...
-  FlowField.vcxproj -> C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\Debug\RTS_DLL.dll
+     Creating library C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.lib and object C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.exp
+  FlowField.vcxproj -> C:\Users\drago\Documents\GitHub\Personal_RTS\Personal_RTS\\Assets\Plugins\RTS_DLL.dll

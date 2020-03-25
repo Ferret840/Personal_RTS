@@ -59,8 +59,8 @@ namespace Pathing
 
   Goal::~Goal()
   {
-    calculateThread.std::thread::~thread();
-
+    calculateThread.join();
+    
     delete fField;
     delete iField;
   }
@@ -82,7 +82,8 @@ namespace Pathing
     using namespace::TerrainData;
 
     if (threadIsComplete == false)
-      return (float)(atan2(position.X - worldX, position.Z - worldZ) * PI / 180.0f);
+      //return (float)(atan2(position.X - worldX, position.Z - worldZ) * PI / 180.0f);
+      return STUCKDIRECTION;
 
     Grid* g = Grid::GetGrid();
     Vector2<int> node = g->NodeFromWorldPoint(Vector3<float>(worldX, worldY, worldZ));

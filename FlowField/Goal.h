@@ -38,6 +38,7 @@ namespace Pathing
     std::thread calculateThread;
 
     void GenerateFields();
+    static void DelayedGoalDestruction(Goal* goal);
   protected:
 
   public:

@@ -11,6 +11,9 @@
 
 namespace Pathing
 {
+#define ENDDIRECTION 69.0f
+#define STUCKDIRECTION -69.0f
+
   class IntegrationField;
 
   class FlowField

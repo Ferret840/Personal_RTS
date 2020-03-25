@@ -231,7 +231,7 @@ extern "C"
       }
     }
 
-    Sector::SectorNode::SectorNode() : Subsector(NULL), Walkable(false)
+    Sector::SectorNode::SectorNode() : Subsector(NULL), Walkable(true)
     {
 
     }
