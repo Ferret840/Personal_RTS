@@ -12,6 +12,8 @@ namespace Selectable
         [RequireComponent(typeof(Collider))]
         public class Unit : Owner
         {
+            static float ENDDIRECTION = -69.0f;
+            static float STUCKDIRECTION = -69.0f;
             //const float minPathUpdateTime = .2f;
             //const float pathUpdateMoveThreshold = .5f;
             //
@@ -77,10 +79,20 @@ namespace Selectable
 
                 Rigidbody rigid = GetComponent<Rigidbody>();
                 CapsuleCollider collider = GetComponent<CapsuleCollider>();
+                rigid.velocity = Vector3.zero;
+                //rigid.mass *= 10;
+                rigid.drag = 10;
+
+                while (moveDirection == STUCKDIRECTION)
+                {
+                    moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+
+                    yield return null;
+                }
                 //rigid.mass /= 10;
                 rigid.drag = 0;
 
-                while (moveDirection != 1000f)
+                while (moveDirection != ENDDIRECTION)
                 {
                     if (moveDirection == int.MaxValue)
                         break;
