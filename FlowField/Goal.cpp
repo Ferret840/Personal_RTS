@@ -40,7 +40,7 @@ namespace Pathing
 
   int Goal::getOwnerCount()
   {
-    return ownerIDs->size();
+    return (int)ownerIDs->size();
   }
 
   Goal::Goal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ) :
