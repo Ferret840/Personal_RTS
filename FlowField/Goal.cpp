@@ -38,10 +38,15 @@ namespace Pathing
     return dimension;
   }
 
+  int Goal::getOwnerCount()
+  {
+    return ownerIDs->size();
+  }
+
   Goal::Goal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ) :
     dimension(_dimension), position(Vector3<float>(_posX, _posY, _posZ)),
     threadIsComplete(false), calculateThread(std::thread(&Goal::GenerateFields, this)),
-    ownerIDs(std::unordered_set<int>())
+    ownerIDs(new std::unordered_set<int>())
   {
     using namespace::TerrainData;
     Grid* g = Grid::GetGrid();
@@ -61,20 +66,37 @@ namespace Pathing
   {
     calculateThread.join();
     
+    if (ownerIDs != nullptr)
+      delete ownerIDs;
+
     delete fField;
     delete iField;
   }
 
   void Goal::AddOwner(int oID)
   {
-    ownerIDs.insert(oID);
+    ownerIDs->insert(oID);
   }
 
   void Goal::RemoveOwner(int oID)
   {
-    ownerIDs.erase(oID);
-    if (ownerIDs.size() == 0)
+    ownerIDs->erase(oID);
+    if (ownerIDs->size() == 0)
       delete this;
+  }
+
+  void Goal::ClearOwners()
+  {
+    ownerIDs->clear();
+    delete this;
+  }
+
+  void Goal::TransferOwners(Goal* newGoal)
+  {
+    delete newGoal->ownerIDs;
+    newGoal->ownerIDs = ownerIDs;
+    ownerIDs = nullptr;
+    delete this;
   }
 
   float Goal::GetDirFromPosition(float worldX, float worldY, float worldZ)
@@ -116,15 +138,26 @@ extern "C"
   {
     return pGoal->getDimension();
   }
+  GOAL_API int GetOwnerCount(Goal* pGoal)
+  {
+    return pGoal->getOwnerCount();
+  }
 
   GOAL_API void AddOwner(Goal* pGoal, int oID)
   {
     pGoal->AddOwner(oID);
   }
-
   GOAL_API void RemoveOwner(Goal* pGoal, int oID)
   {
     pGoal->RemoveOwner(oID);
+  }
+  GOAL_API void ClearOwners(Goal* pGoal)
+  {
+    pGoal->ClearOwners();
+  }
+  GOAL_API void TransferOwners(Goal* originalGoal, Goal* newGoal)
+  {
+    originalGoal->TransferOwners(newGoal);
   }
 
   GOAL_API float GetDirFromPosition(Goal* pGoal, float worldX, float worldY, float worldZ)

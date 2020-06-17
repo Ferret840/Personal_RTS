@@ -119,9 +119,14 @@ namespace Players
                     RaycastHit hit;
                     Camera cam = Camera.main;
                     Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit, 1024f))
+                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault(i + 1)))
                     {
-                        Goal newGoal = new Goal(PlayerNumber, (char)i, hit.point);
+                        Goal newGoal;
+                        Owner ownerComp = hit.transform.GetComponent<Selectable.Owner>();
+                        if (ownerComp != null)
+                            newGoal = new Goal(PlayerNumber, (char)i, hit.transform);
+                        else
+                            newGoal = new Goal(PlayerNumber, (char)i, hit.point);
 
                         foreach (Owner o in selectedDims[i])
                         {
@@ -165,9 +170,7 @@ namespace Players
         /// </summary>
         void ClickSelect()
         {
-            RaycastHit hit;
             Ray ray = cam.ScreenPointToRay(mouseStartPos);
-            Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
             RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
             Owner closest = null;
@@ -223,9 +226,7 @@ namespace Players
         /// </summary>
         void MouseOver()
         {
-            RaycastHit hit;
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            Physics.Raycast(ray, out hit, 1024f, SelectionLayer);
             RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
 
             Owner closest = null;

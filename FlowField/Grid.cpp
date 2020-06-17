@@ -98,15 +98,15 @@ namespace TerrainData
   {
     char dim;
 
-    if (dimension == 2 << 8)//dim1)
+    if (dimension == 1 << 8)//dim1)
     {
       dim = (char)0;
     }
-    else if (dimension == 2 << 9)
+    else if (dimension == 1 << 9)
     {
       dim = (char)1;
     }
-    else if (dimension == 2 << 10)
+    else if (dimension == 1 << 10)
     {
       dim = (char)2;
     }

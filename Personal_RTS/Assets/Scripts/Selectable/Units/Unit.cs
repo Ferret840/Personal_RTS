@@ -12,7 +12,7 @@ namespace Selectable
         [RequireComponent(typeof(Collider))]
         public class Unit : Owner
         {
-            static float ENDDIRECTION = -69.0f;
+            static float ENDDIRECTION = 69.0f;
             static float STUCKDIRECTION = -69.0f;
             //const float minPathUpdateTime = .2f;
             //const float pathUpdateMoveThreshold = .5f;
@@ -85,15 +85,22 @@ namespace Selectable
 
                 while (moveDirection == STUCKDIRECTION)
                 {
-                    moveDirection = TargetGoal.GetDirFromPosition(transform.position);
-
                     yield return null;
+
+                    moveDirection = TargetGoal.GetDirFromPosition(transform.position);
                 }
                 //rigid.mass /= 10;
                 rigid.drag = 0;
 
                 while (moveDirection != ENDDIRECTION)
                 {
+                    if (moveDirection == STUCKDIRECTION)
+                    {
+                        yield return null;
+                        moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+                        continue;
+                    }
+
                     if (moveDirection == int.MaxValue)
                         break;
 

@@ -36,7 +36,7 @@ namespace TerrainData
         Grid()
         {
             if (grid_Instance != null)
-                if(grid_Instance.gridPtr != null)
+                if(grid_Instance.gridPtr != IntPtr.Zero)
                     DestroyGrid(grid_Instance.gridPtr);
 
             grid_Instance = this;
