@@ -14,7 +14,9 @@
 #include <math.h>
 
 #ifndef PI
-#define PI 3.14159265358979323846
+#define PI 3.14159265358979323846f
+#define DEG2RAD (PI / 180.0f)
+#define RAD2DEG (180.0f / PI);
 #endif
 
 namespace Pathing

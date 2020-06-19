@@ -33,6 +33,11 @@ namespace TerrainData
 
         IntPtr gridPtr;
 
+        public bool DrawDebuglines = false;
+        public int DebugBoxSize = 50;
+
+        Selectable.Units.Unit[] units;
+
         Grid()
         {
             if (grid_Instance != null)
@@ -114,6 +119,51 @@ namespace TerrainData
         public bool ModifyBlockage(char _dimension, bool _blocksTerrain, Vector3 _BottomLeft, Vector3 _TopRight)
         {
             return ModifyBlockage(_dimension, _blocksTerrain, _BottomLeft.x, _BottomLeft.y, _BottomLeft.z, _TopRight.x, _TopRight.y, _TopRight.z);
+        }
+
+        void OnDrawGizmos()
+        {
+            if (DrawDebuglines)
+            {
+                if (units == null)
+                    units = FindObjectsOfType<Selectable.Units.Unit>();
+
+                Pathing.Goal g = null;
+
+                foreach (Selectable.Units.Unit u in units)
+                {
+                    if (u.TargetGoal != null)
+                    {
+                        g = u.TargetGoal;
+                        break;
+                    }
+                }
+
+                if(g != null)
+                {
+                    RaycastHit hit;
+                    Camera cam = Camera.main;
+                    Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.Default))
+                    {
+                        Vector3 mouseCenter = hit.point + Vector3.up;
+                        Debug.Log("Angle: " + g.GetDirFromPosition(mouseCenter));
+
+                        for (float x = -DebugBoxSize * nodeRadius; x < DebugBoxSize * nodeRadius; x += (nodeRadius))
+                        {
+                            for (float y = -DebugBoxSize * nodeRadius; y < DebugBoxSize * nodeRadius; y += (nodeRadius))
+                            {
+                                Vector3 at = mouseCenter + new Vector3(x, 0, y);
+                                float angleDir = g.GetDirFromPosition(at) * Mathf.Deg2Rad;
+                                Gizmos.color = Color.red;
+                                Gizmos.DrawLine(at, at + nodeRadius * new Vector3(Mathf.Sin(angleDir), 0, Mathf.Cos(angleDir)));
+                                Gizmos.color = Color.blue;
+                                Gizmos.DrawWireSphere(at, nodeRadius / 4);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

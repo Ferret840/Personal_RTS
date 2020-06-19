@@ -111,6 +111,34 @@ namespace Pathing
     Vector2<int> node = g->NodeFromWorldPoint(Vector3<float>(worldX, worldY, worldZ));
 
     return fField->getDirAt(node.x, node.y);
+
+    //int xPlus1 = node.x + 1 < g->getGridSize().x ? 1 : 0;
+    //int yPlus1 = node.y + 1 < g->getGridSize().y ? 1 : 0;
+    //int xMinus1 = node.x == 0 ? 0 : -1;
+    //int yMinus1 = node.y == 0 ? 0 : -1;
+    //
+    //int count = (xPlus1 - xMinus1) * (yPlus1 - yMinus1);
+    //
+    //float xAngle = 0;
+    //float yAngle = 0;
+    //
+    //for (int x = xMinus1; x < xPlus1; ++x)
+    //{
+    //  for (int y = yMinus1; y < yPlus1; ++y)
+    //  {
+    //    float angle = fField->getDirAt(node.x + x, node.y + y);
+    //
+    //    if (x == 0 && y == 0 && (angle == UP || angle == DOWN || angle == RIGHT || angle == LEFT))
+    //      return angle;
+    //
+    //    xAngle += cosf(angle * DEG2RAD);
+    //    yAngle += sinf(angle * DEG2RAD);
+    //  }
+    //}
+    //
+    //float avg = atan2f(yAngle, xAngle) / DEG2RAD;
+    //
+    //return avg;
   }
 }
 

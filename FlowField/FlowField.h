@@ -13,6 +13,14 @@ namespace Pathing
 {
 #define ENDDIRECTION 69.0f
 #define STUCKDIRECTION -69.0f
+#define UP 0.0f
+#define UPRIGHT 45.0f
+#define UPLEFT 315.0f
+#define LEFT 270.0f
+#define RIGHT 90.0f
+#define DOWN 180.0f
+#define DOWNRIGHT 135.0f
+#define DOWNLEFT 225.0f
 
   class IntegrationField;
 
