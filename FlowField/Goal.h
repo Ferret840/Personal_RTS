@@ -29,9 +29,13 @@ namespace Pathing
   class Goal
   {
   private:
+    const Vector3<float> bottomLeft, topRight;
     const Vector3<float> position;
+    const Vector2<int> bottomLeftNode, topRightNode;
     std::unordered_set<int>* ownerIDs;// = new HashSet<Owner>();
     int xPos, yPos, xSector, ySector;
+    int xBLPos, yBLPos, xBLSector, yBLSector;
+    int xTRPos, yTRPos, xTRSector, yTRSector;
 
     IntegrationField* iField;
     FlowField* fField;
@@ -47,14 +51,20 @@ namespace Pathing
     // ;
     //int PlayerNum;
     const char dimension;
-    int getxPos();
-    int getyPos();
-    int getxSector();
-    int getySector();
+    int getxPos() const;
+    int getyPos() const;
+    int getxSector() const;
+    int getySector() const;
+
+    const Vector2<int> getBLPosition() const;
+
+    const Vector2<int> getTRPosition() const;
+
     char getDimension();
     int getOwnerCount();
 
     Goal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ);
+    Goal(int _playerNum, char _dimension, float _bottomLeftX, float _bottomLeftY, float _bottomLeftZ, float _topRightX, float _topRightY, float _topRightZ);
     ~Goal();
 
     void AddOwner(int oID);
@@ -88,6 +98,7 @@ extern "C"
   GOAL_API float GetDirFromPosition(Goal* pGoal, float worldX, float worldY, float worldZ);
 
   GOAL_API Goal* NewGoal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ);
+  GOAL_API Goal* NewStructureGoal(int _playerNum, char _dimension, float _bottomLeftX, float _bottomLeftY, float _bottomLeftZ, float _topRightX, float _topRightY, float _topRightZ);
 }
 
 #endif

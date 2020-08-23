@@ -13,6 +13,8 @@ namespace Pathing
 
         [DllImport("RTS_DLL", EntryPoint = "NewGoal")]
         static extern IntPtr NewGoal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ);
+        [DllImport("RTS_DLL", EntryPoint = "NewStructureGoal")]
+        static extern IntPtr NewStructureGoal(int _playerNum, char _dimension, float _bottomLeftX, float _bottomLeftY, float _bottomLeftZ, float _topRightX, float _topRightY, float _topRightZ);
 
         [DllImport("RTS_DLL", EntryPoint = "GetDirFromPosition")]
         static extern float GetDirFromPosition(IntPtr pGoal, float _posX, float _posY, float _posZ);
@@ -112,7 +114,6 @@ namespace Pathing
 
         public Goal(int _playerNum, char _dimension, Transform _target) : this(_playerNum, _dimension, _target.position)
         {
-            goalPtr = NewGoal(_playerNum, _dimension, _target.position.x, _target.position.y, _target.position.z);
             target = _target;
 
             structureComp = target.GetComponent<Selectable.Structures.Base_Structure>();
@@ -120,33 +121,39 @@ namespace Pathing
             isStructure = structureComp == null ? false : true;
             isUnit = unitComp == null ? false : true;
 
-            GoalManager.GoalManager_Instance.StartCoroutine(UpdateTargetLocationAndRepath());
+            if (isStructure)
+            {
+                Vector3 bottomLeft = structureComp.BottomLeftCorner;
+                Vector3 topRight = structureComp.TopRightCorner;
+                goalPtr = NewStructureGoal(_playerNum, _dimension, bottomLeft.x, bottomLeft.y, bottomLeft.z, topRight.x, topRight.y, topRight.z);
+            }
+            else if (isUnit)
+            {
+                goalPtr = NewGoal(_playerNum, _dimension, _target.position.x, _target.position.y, _target.position.z);
+                GoalManager.GoalManager_Instance.StartCoroutine(UpdateTargetLocationAndRepath());
+            }
         }
 
         public IEnumerator UpdateTargetLocationAndRepath()
         {
+            float distToTravel = TerrainData.Grid.GetGrid.nodeRadius * 2;
+            float sqrDistToTravel = distToTravel * distToTravel;
+
             yield return null;
 
-            //Only units should be able to move and thus need to update the goal
-            if (isUnit)
+            while (GetOwnerCount(goalPtr) > 0)
             {
-                float distToTravel = TerrainData.Grid.GetGrid.nodeRadius * 2;
-                float sqrDistToTravel = distToTravel * distToTravel;
+                yield return new WaitForSeconds(distToTravel / unitComp.GetUnitStats.speed);
 
-                while (GetOwnerCount(goalPtr) > 0)
+                if (Vector3.SqrMagnitude(target.position - position) > sqrDistToTravel)
                 {
-                    yield return new WaitForSeconds(distToTravel / unitComp.GetUnitStats.speed);
+                    position = target.position;
 
-                    if (Vector3.SqrMagnitude(target.position - position) > sqrDistToTravel)
-                    {
-                        position = target.position;
+                    IntPtr newGoalPtr = NewGoal(playerNum, dimension, position.x, position.y, position.z);
 
-                        IntPtr newGoalPtr = NewGoal(playerNum, dimension, position.x, position.y, position.z);
+                    TransferOwners(goalPtr, newGoalPtr);
 
-                        TransferOwners(goalPtr, newGoalPtr);
-
-                        goalPtr = newGoalPtr;
-                    }
+                    goalPtr = newGoalPtr;
                 }
             }
 

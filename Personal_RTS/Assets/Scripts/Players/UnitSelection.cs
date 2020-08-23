@@ -5,6 +5,7 @@ using Selectable;
 using Pathing;
 using Selectable.Units;
 using Tools;
+using UnityEngine.UI;
 
 namespace Players
 {
@@ -13,8 +14,10 @@ namespace Players
     public class UnitSelection : MonoBehaviour
     {
         public int PlayerNumber;
+        public GameObject SelectionCanvasPrefab;
 
         public LayerMask SelectionLayer;
+        public GameObject selectionContentObject;
 
         //public float ClickToHoldTime = 0.25f;
         bool isDragging = false;
@@ -56,6 +59,9 @@ namespace Players
         // Use this for initialization
         void Start()
         {
+            GameObject g = (GameObject)Instantiate(SelectionCanvasPrefab);
+            selectionContentObject = g.GetComponentInChildren<GridLayoutGroup>().gameObject;
+
             cam = gameObject.GetComponent<Camera>();
         }
 
@@ -326,6 +332,7 @@ namespace Players
             {
                 o.onDied -= DeselectSingle;
                 o.Deselect();
+                o.RemoveSelectionIcon(PlayerNumber);
             }
             selectedObjects.Clear();
         }
@@ -338,6 +345,7 @@ namespace Players
         {
             target.onDied -= DeselectSingle;
             target.Deselect();
+            target.RemoveSelectionIcon(PlayerNumber);
             selectedObjects.Remove(target);
         }
 
@@ -352,6 +360,12 @@ namespace Players
             newlySelected.Select();
             selectedObjects.Add(newlySelected);
             newlySelected.SetHighlighted(false);
+            
+            GameObject icon = (GameObject)Instantiate(newlySelected.SelectionIconPrefab);
+            icon.GetComponent<Image>().sprite = newlySelected.getImage;
+            newlySelected.AddSelectionIcon(PlayerNumber, icon);
+            icon.transform.SetParent(selectionContentObject.transform);
+            icon.transform.localScale = Vector3.one;
         }
 
         /// <summary>

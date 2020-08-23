@@ -13,24 +13,34 @@ namespace Pathing
     threadIsComplete = true;
   }
 
-  int Goal::getxPos()
+  int Goal::getxPos() const
   {
     return xPos;
   }
 
-  int Goal::getyPos()
+  int Goal::getyPos() const
   {
     return yPos;
   }
 
-    int Goal::getxSector()
+  int Goal::getxSector() const
   {
     return xSector;
   }
 
-  int Goal::getySector()
+  int Goal::getySector() const
   {
     return ySector;
+  }
+
+  const Vector2<int> Goal::getBLPosition() const
+  {
+    return bottomLeftNode;
+  }
+
+  const Vector2<int> Goal::getTRPosition() const
+  {
+    return topRightNode;
   }
 
   char Goal::getDimension()
@@ -43,8 +53,14 @@ namespace Pathing
     return (int)ownerIDs->size();
   }
 
-  Goal::Goal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ) :
-    dimension(_dimension), position(Vector3<float>(_posX, _posY, _posZ)),
+  Goal::Goal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ) : Goal(_playerNum, _dimension, _posX, _posY, _posZ, _posX, _posY, _posZ)
+  {
+  }
+
+  Goal::Goal(int _playerNum, char _dimension, float _bottomLeftX, float _bottomLeftY, float _bottomLeftZ, float _topRightX, float _topRightY, float _topRightZ) :
+    dimension(_dimension),
+    bottomLeft(Vector3<float>(_bottomLeftX, _bottomLeftY, _bottomLeftZ)), topRight(Vector3<float>(_topRightX, _topRightY, _topRightZ)),
+    position(Vector3<float>((bottomLeft + topRight) / 2.0f)), bottomLeftNode(Grid::GetGrid()->NodeFromWorldPoint(bottomLeft)), topRightNode(Grid::GetGrid()->NodeFromWorldPoint(topRight)),
     threadIsComplete(false), calculateThread(std::thread(&Goal::GenerateFields, this)),
     ownerIDs(new std::unordered_set<int>())
   {
@@ -196,5 +212,10 @@ extern "C"
   GOAL_API Goal* NewGoal(int _playerNum, char _dimension, float _posX, float _posY, float _posZ)
   {
     return new Goal(_playerNum, _dimension, _posX, _posY, _posZ);
+  }
+
+  GOAL_API Goal* NewStructureGoal(int _playerNum, char _dimension, float _bottomLeftX, float _bottomLeftY, float _bottomLeftZ, float _topRightX, float _topRightY, float _topRightZ)
+  {
+    return new Goal(_playerNum, _dimension, _bottomLeftX, _bottomLeftY, _bottomLeftZ, _topRightX, _topRightY, _topRightZ);
   }
 }

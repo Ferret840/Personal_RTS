@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Pathing;
+using UnityEngine.UI;
 
 namespace Selectable
 {
@@ -19,6 +20,17 @@ namespace Selectable
     
         [SerializeField]
         protected UniversalStats univStats;
+
+        public GameObject SelectionIconPrefab;
+        [SerializeField]
+        protected Sprite image;
+        public Sprite getImage
+        {
+            get
+            {
+                return image;
+            }
+        }
     
         [System.NonSerialized]
         public bool IsSelected = false;
@@ -36,6 +48,8 @@ namespace Selectable
             get;
             private set;
         }
+
+        Dictionary<int, GameObject> UISelectionIcons = new Dictionary<int, GameObject>();
     
         // Use this for initialization
         void Awake()
@@ -91,16 +105,27 @@ namespace Selectable
         {
             SelectedEffect.SetActive(false);
             IsSelected = false;
-            //print("O De");
         }
     
         virtual public void Select()
         {
             SelectedEffect.SetActive(true);
             IsSelected = true;
-            //print("O Se");
         }
-    
+
+        virtual public void AddSelectionIcon(int playerNum, GameObject icon)
+        {
+            UISelectionIcons.Add(playerNum, icon);
+            icon.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+        }
+
+        virtual public void RemoveSelectionIcon(int playerNum)
+        {
+            GameObject icon = UISelectionIcons[playerNum];
+            UISelectionIcons.Remove(playerNum);
+            Destroy(icon);
+        }
+
         virtual public void SetHighlighted(bool IsHighlighted)
         {
             HighlightedEffect.SetActive(IsHighlighted);
@@ -108,11 +133,15 @@ namespace Selectable
     
         virtual public void TakeDamage(int incomingDamage)
         {
-            if (incomingDamage >= univStats.Health)
+            if (incomingDamage >= univStats.CurrentHealth)
             {
                 HandleDeath();
             }
-            univStats.Health -= incomingDamage;
+            univStats.CurrentHealth = Mathf.Clamp(univStats.CurrentHealth - incomingDamage, 0, univStats.MaxHealth);
+            foreach (var icon in UISelectionIcons)
+            {
+                icon.Value.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+            }
         }
     
         virtual protected void OnDestroy()
@@ -122,6 +151,10 @@ namespace Selectable
         virtual protected void HandleDeath()
         {
             onDied(this);
+            foreach (var icon in UISelectionIcons)
+            {
+                RemoveSelectionIcon(icon.Key);
+            }
             if(this.TargetGoal != null)
                 TargetGoal.RemoveOwner(gameObject.GetInstanceID());
             Destroy(gameObject);
@@ -133,8 +166,9 @@ namespace Selectable
     {
         public int Cost;
         public float BuildTime;
-    
-        public int Health;
+
+        public int MaxHealth;
+        public int CurrentHealth;
     }
 
 }

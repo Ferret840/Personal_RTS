@@ -9,6 +9,9 @@ namespace Players
     [RequireComponent(typeof(Camera))]
     public class PlayerCamera : MonoBehaviour
     {
+        public GameObject MinimapCanvasPrefab;
+        public GameObject ResourcesCanvasPrefab;
+
         public int PlayerNumber;
         Camera cam;
 
@@ -28,6 +31,9 @@ namespace Players
         // Use this for initialization
         void Start()
         {
+            Instantiate(MinimapCanvasPrefab);
+            Instantiate(ResourcesCanvasPrefab);
+
             cam = GetComponent<Camera>();
             cam.targetDisplay = PlayerNumber;
 

@@ -114,14 +114,27 @@ namespace Pathing
   {
     Grid* g = Grid::GetGrid();
 
-    IFieldNode* n = &grid[goal->getxSector()][goal->getySector()][goal->getxPos()][goal->getyPos()];
+    Vector2<int> BLPosition = goal->getBLPosition();
+    Vector2<int> TRPosition = goal->getTRPosition();
 
-    int circumference = (int)(min(g->getGridSize().x, g->getGridSize().y) * 2 * PI);
     std::queue<IFieldNode*> openList = std::queue<IFieldNode*>();
 
-    n->Distance = 0;
+    IFieldNode* n;
 
-    openList.push(n);
+
+    for (int x = BLPosition.x; x <= TRPosition.x; ++x)
+    {
+      for (int y = BLPosition.y; y <= TRPosition.y; ++y)
+      {
+        n = &grid[g->CoordToSectorNumber(x)][g->CoordToSectorNumber(y)][x % g->getNodesPerSector()][y % g->getNodesPerSector()];
+
+        int circumference = (int)(min(g->getGridSize().x, g->getGridSize().y) * 2 * PI);
+            
+        n->Distance = 0;
+
+        openList.push(n);
+      }
+    }
 
     while (openList.size() > 0)
     {

@@ -23,6 +23,7 @@ namespace Players
 
         public Vector3 InitialCameraHeight;
 
+        public GameObject PlayerCameraPrefab;
 
         // Use this for initialization
         void Start()
@@ -32,7 +33,7 @@ namespace Players
             PlayerList = new Player[PlayerCount];
 
             for (int i = 0; i < PlayerCount; ++i)
-                PlayerList[i] = new Player(i, InitialCameraHeight);
+                PlayerList[i] = new Player(i, InitialCameraHeight, PlayerCameraPrefab);
         }
 
         // Update is called once per frame

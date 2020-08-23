@@ -1,10 +1,15 @@
 fileFormatVersion: 2
 guid: 14f0456210af4224e99d8d557211e6d4
-timeCreated: 1576184308
+timeCreated: 1598192015
 licenseType: Free
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - SelectionIconPrefab: {fileID: 1684611814642380, guid: 3a0e4482f1da79640827c4e7f9bb9e96,
+      type: 2}
+  - image: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  - SelectedEffect: {instanceID: 0}
+  - HighlightedEffect: {instanceID: 0}
   executionOrder: 700
   icon: {instanceID: 0}
   userData: 

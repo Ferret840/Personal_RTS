@@ -21,11 +21,11 @@ namespace Players
             private set;
         }
 
-        public Player(int _playerNum, Vector3 initialHeight)
+        public Player(int _playerNum, Vector3 initialHeight, GameObject playerCamPrefab)
         {
             PlayerNumber = _playerNum;
 
-            GameObject g = (GameObject)GameObject.Instantiate(Resources.Load("PlayerCamera"), initialHeight, Quaternion.Euler(75, 0, 0));
+            GameObject g = (GameObject)GameObject.Instantiate(playerCamPrefab, initialHeight, Quaternion.Euler(75, 0, 0));
             Cam = g.GetComponent<PlayerCamera>();
             Cam.PlayerNumber = PlayerNumber;
 

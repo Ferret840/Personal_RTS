@@ -21,6 +21,20 @@ namespace Selectable
             LayerMask dimension = 0;
 
             Vector3 m_BottomLeft, m_TopRight;
+            public Vector3 BottomLeftCorner
+            {
+                get
+                {
+                    return m_BottomLeft;
+                }
+            }
+            public Vector3 TopRightCorner
+            {
+                get
+                {
+                    return m_TopRight;
+                }
+            }
 
             bool exists;
 

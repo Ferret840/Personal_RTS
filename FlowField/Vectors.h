@@ -11,6 +11,9 @@ public:
   Vector3<T>(T _x, T _y, T _z) : X(_x), Y(_y), Z(_z), sqLength(X * X + Y * Y + Z * Z)
   {
   }
+  Vector3<T>(const Vector3<T>& orig) : X(orig.X), Y(orig.Y), Z(orig.Z), sqLength(orig.sqLength)
+  {
+  }
   static Vector3<T> right()
   {
     return Vector3<T>(1, 0, 0);
@@ -30,6 +33,22 @@ public:
   static Vector3<T> zero()
   {
     return Vector3<T>(0, 0, 0);
+  }
+  Vector3<T> operator + (const Vector3<T>& rhs)
+  {
+    return Vector3<T>(X + rhs.X, Y + rhs.Y, Z + rhs.Z);
+  }
+  const Vector3<T> operator+(const Vector3<T>& rhs) const
+  {
+    return Vector3<T>(X + rhs.X, Y + rhs.Y, Z + rhs.Z);
+  }
+  Vector3<T> operator / (const T& rhs)
+  {
+    return Vector3<T>(X / rhs, Y / rhs, Z / rhs);
+  }
+  const Vector3<T> operator/(const T& rhs) const
+  {
+    return Vector3<T>(X / rhs, Y / rhs, Z / rhs);
   }
 };
 
