@@ -58,7 +58,7 @@ namespace Pathing
         bool isUnit = false;
         bool isStructure = false;
         Selectable.Units.Unit unitComp = null;
-        Selectable.Structures.Base_Structure structureComp = null;
+        Selectable.Structures.NonTerrainObstacle structureComp = null;
         int playerNum;
         char dimension;
 
@@ -116,7 +116,7 @@ namespace Pathing
         {
             target = _target;
 
-            structureComp = target.GetComponent<Selectable.Structures.Base_Structure>();
+            structureComp = target.GetComponent<Selectable.Structures.NonTerrainObstacle>();
             unitComp = target.GetComponent<Selectable.Units.Unit>();
             isStructure = structureComp == null ? false : true;
             isUnit = unitComp == null ? false : true;

@@ -48,6 +48,7 @@ namespace Selectable
 
             private void Start()
             {
+                UpdateMinimapLayer();
                 PlayerManager.instance.PlayerList[PlayerNumber].Selector.AddUnit(this);
                 //StartCoroutine(UpdatePath());
                 //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);

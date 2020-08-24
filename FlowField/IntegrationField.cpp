@@ -156,7 +156,7 @@ namespace Pathing
 
 #if _DEBUG
     std::ofstream myFile;
-    myFile.open("IntegrationFieldOutput.txt");
+    myFile.open("IntegrationFieldOutput.ifdbg");
 
     int lastSectorRemainderX = (int)g->getWorldSize().x % g->getNodesPerSector(),
         lastSectorRemainderY = (int)g->getWorldSize().y % g->getNodesPerSector();
@@ -165,7 +165,11 @@ namespace Pathing
     {
       for (int x = 0; x < g->getSectorCount().x * g->getNodesPerSector() + lastSectorRemainderX; ++x)
       {
-        myFile << std::setw(5) << grid[x / g->getNodesPerSector()][y / g->getNodesPerSector()][x % g->getNodesPerSector()][y % g->getNodesPerSector()].Distance << " - ";
+        int dist = grid[x / g->getNodesPerSector()][y / g->getNodesPerSector()][x % g->getNodesPerSector()][y % g->getNodesPerSector()].Distance;
+        if (dist == UINT_MAX / 2)
+          myFile << std::setw(5) << "INF" << " - ";
+        else
+          myFile << std::setw(5) << dist << " - ";
       }
       myFile << std::endl;
     }

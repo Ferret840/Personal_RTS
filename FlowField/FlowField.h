@@ -31,6 +31,7 @@ namespace Pathing
     std::queue<std::thread> generateThreads;
 
     void CalculateSection(int x, int y, IntegrationField* iField, int gridSizeX, int gridSizeY);
+    void GetMins(IntegrationField* iField, int x, int y, int deltaX, int deltaY, int gridSizeX, int gridSizeY, int& minD, int& minX, int& minY);
     void ThreadFunction(int sizeX, int sizeY, int thread_Num, IntegrationField* iField);
   protected:
 

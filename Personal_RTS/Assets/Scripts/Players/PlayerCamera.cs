@@ -11,15 +11,19 @@ namespace Players
     {
         public GameObject MinimapCanvasPrefab;
         public GameObject ResourcesCanvasPrefab;
+        public GameObject MinimapCameraPrefab;
 
         public int PlayerNumber;
         Camera cam;
+        Camera minimapCam;
 
         LayerMask view;
+        LayerMask minimapView;
 
         int viewIndex = 1;
 
         public LayerMask[] dimensions = new LayerMask[3];
+        public LayerMask[] minimapDimensions = new LayerMask[3];
 
         Vector3 mouseMoved;
 
@@ -33,11 +37,13 @@ namespace Players
         {
             Instantiate(MinimapCanvasPrefab);
             Instantiate(ResourcesCanvasPrefab);
+            minimapCam = Instantiate(MinimapCameraPrefab, new Vector3(50, 100, 50), Quaternion.Euler(90, 0, 0)).GetComponent<Camera>();
 
             cam = GetComponent<Camera>();
             cam.targetDisplay = PlayerNumber;
 
             view = dimensions[viewIndex];
+            minimapView = minimapDimensions[viewIndex];
         }
 
         // Update is called once per frame
@@ -119,6 +125,7 @@ namespace Players
             if (view != dimensions[viewIndex])
             {
                 view = dimensions[viewIndex];
+                minimapView = minimapDimensions[viewIndex];
 
                 visualEffectDuration = EffectMaxDuration;
 
@@ -130,6 +137,7 @@ namespace Players
         IEnumerator ChangeViewEffect()
         {
             float i = 0;
+            minimapCam.cullingMask = minimapView;
 
             for (i = 0; i < EffectMaxDuration / 2; i += Time.deltaTime, visualEffectDuration -= Time.deltaTime)
             {

@@ -37,7 +37,8 @@ namespace Selectable
     
         public GameObject SelectedEffect;
         public GameObject HighlightedEffect;
-    
+        
+        public GameObject MinimapObject;
     
         public delegate void OnDied(Owner owner);
         public event OnDied onDied;
@@ -60,13 +61,18 @@ namespace Selectable
         // Use this for initialization
         void Start()
         {
-    
+            UpdateMinimapLayer();
         }
     
         // Update is called once per frame
         void Update()
         {
     
+        }
+
+        virtual protected void UpdateMinimapLayer()
+        {
+            MinimapObject.layer = gameObject.layer + 3;
         }
     
         virtual public void OnRightMouse()

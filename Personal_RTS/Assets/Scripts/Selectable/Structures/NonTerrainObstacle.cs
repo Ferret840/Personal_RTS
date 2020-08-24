@@ -52,6 +52,8 @@ namespace Selectable
 
             protected void Init()
             {
+                UpdateMinimapLayer();
+
                 //Get the collider
                 objCollider = gameObject.GetComponent<Collider>();
 
