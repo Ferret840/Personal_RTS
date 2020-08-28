@@ -49,7 +49,7 @@ namespace Selectable
             private void Start()
             {
                 UpdateMinimapLayer();
-                PlayerManager.instance.PlayerList[PlayerNumber].Selector.AddUnit(this);
+                PlayerManager.Instance.PlayerList[PlayerNumber].Selector.AddUnit(this);
                 //StartCoroutine(UpdatePath());
                 //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
             }
@@ -146,7 +146,7 @@ namespace Selectable
 
             protected override void HandleDeath()
             {
-                PlayerManager.instance.PlayerList[PlayerNumber].Selector.RemoveUnit(this);
+                PlayerManager.Instance.PlayerList[PlayerNumber].Selector.RemoveUnit(this);
                 base.HandleDeath();
             }
 

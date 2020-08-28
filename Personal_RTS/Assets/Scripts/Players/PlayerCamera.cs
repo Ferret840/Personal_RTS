@@ -82,7 +82,7 @@ namespace Players
             {
                 int selectedLayer = 1;
 
-                foreach (Owner o in PlayerManager.instance.PlayerList[PlayerNumber].Selector.selectedObjects)
+                foreach (Owner o in PlayerManager.Instance.PlayerList[PlayerNumber].Selector.selectedObjects)
                 {
                     selectedLayer |= (1 << o.gameObject.layer);
                 }
@@ -116,7 +116,7 @@ namespace Players
 
                 transform.position += mouseMoved;
             }
-            else if (Input.GetAxis("Zoom") != 0)
+            else if (Input.GetAxis("Zoom") != 0 && !UIManager.Instance.UIIsMouseover())
             {
                 transform.position += transform.forward * Input.GetAxis("Zoom");
             }

@@ -109,7 +109,7 @@ namespace Pathing
             playerNum = _playerNum;
             dimension = _dimension;
 
-            GoalManager.GoalManager_Instance.AddGoal(this);
+            GoalManager.Instance.AddGoal(this);
         }
 
         public Goal(int _playerNum, char _dimension, Transform _target) : this(_playerNum, _dimension, _target.position)
@@ -130,13 +130,13 @@ namespace Pathing
             else if (isUnit)
             {
                 goalPtr = NewGoal(_playerNum, _dimension, _target.position.x, _target.position.y, _target.position.z);
-                GoalManager.GoalManager_Instance.StartCoroutine(UpdateTargetLocationAndRepath());
+                GoalManager.Instance.StartCoroutine(UpdateTargetLocationAndRepath());
             }
         }
 
         public IEnumerator UpdateTargetLocationAndRepath()
         {
-            float distToTravel = TerrainData.Grid.GetGrid.nodeRadius * 2;
+            float distToTravel = TerrainData.Grid.Instance.nodeRadius * 2;
             float sqrDistToTravel = distToTravel * distToTravel;
 
             yield return null;
@@ -177,7 +177,7 @@ namespace Pathing
 
         ~Goal()
         {
-            GoalManager.GoalManager_Instance.RemoveGoal(this);
+            GoalManager.Instance.RemoveGoal(this);
         }
     }
 

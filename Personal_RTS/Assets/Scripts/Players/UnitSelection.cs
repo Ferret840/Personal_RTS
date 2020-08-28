@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Selectable;
@@ -21,6 +21,7 @@ namespace Players
 
         //public float ClickToHoldTime = 0.25f;
         bool isDragging = false;
+        bool denySelect = false;
         Vector3 mouseStartPos = Vector3.zero;
 
         Camera cam;
@@ -82,11 +83,13 @@ namespace Players
         {
             if (Input.GetButtonDown("SelectDeselect"))
             {
+                if (UIManager.Instance.UIIsMouseover())
+                    denySelect = true;
                 mouseStartPos = Input.mousePosition;
             }
             else if (Input.GetButton("SelectDeselect") == true)
             {
-                if (isDragging == false && (Input.mousePosition - mouseStartPos).sqrMagnitude > MinDragSize.sqrMagnitude)
+                if (isDragging == false && !denySelect && (Input.mousePosition - mouseStartPos).sqrMagnitude > MinDragSize.sqrMagnitude)
                 {
                     isDragging = true;
                     StartCoroutine(DragHighlight());
@@ -94,59 +97,30 @@ namespace Players
             }
             else if (Input.GetButtonUp("SelectDeselect"))
             {
-                if (isDragging == false)
+                if (!denySelect)
                 {
-                    ClickSelect();
+                    if (isDragging == false)
+                    {
+                        ClickSelect();
+                    }
+                    else
+                    {
+                        isDragging = false;
+                    }
                 }
-                else
-                {
-                    isDragging = false;
-                }
+                denySelect = false;
             }
 
             if (Input.GetButtonDown("GiveCommand"))
             {
-                //Do collision detection to see if the mouse is over a target or not.
-
-                //For now, all commands will assume a simple move command
-
-                List<Owner>[] selectedDims = new List<Owner>[3] { new List<Owner>(), new List<Owner>(), new List<Owner>() };
-
-                foreach (Owner o in selectedObjects)
-                {
-                    selectedDims[o.gameObject.layer - 8].Add(o);
-                }
-
-                for (int i = 0; i < 3; ++i)
-                {
-                    if (selectedDims[i].Count == 0)
-                        continue;
-
-                    RaycastHit hit;
-                    Camera cam = Camera.main;
-                    Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault(i + 1)))
-                    {
-                        Goal newGoal;
-                        Owner ownerComp = hit.transform.GetComponent<Selectable.Owner>();
-                        if (ownerComp != null)
-                            newGoal = new Goal(PlayerNumber, (char)i, hit.transform);
-                        else
-                            newGoal = new Goal(PlayerNumber, (char)i, hit.point);
-
-                        foreach (Owner o in selectedDims[i])
-                        {
-                            o.SetTargetGoal(newGoal);
-
-                            o.OnRightMouse();
-                        }
-                    }
-                }
+                if (!UIManager.Instance.UIIsMouseover())
+                    IssueCommand();
             }
 
             if (Input.GetButton("SelectDeselect") == false && Input.GetButton("GiveCommand") == false)
             {
-                MouseOver();
+                if (!UIManager.Instance.UIIsMouseover())
+                    MouseOver();
             }
         }
 
@@ -224,6 +198,46 @@ namespace Players
             else
             {
                 SelectNew(closest);
+            }
+        }
+
+        void IssueCommand()
+        {
+            //Do collision detection to see if the mouse is over a target or not.
+
+            //For now, all commands will assume a simple move command
+
+            List<Owner>[] selectedDims = new List<Owner>[3] { new List<Owner>(), new List<Owner>(), new List<Owner>() };
+
+            foreach (Owner o in selectedObjects)
+            {
+                selectedDims[o.gameObject.layer - 8].Add(o);
+            }
+
+            for (int i = 0; i < 3; ++i)
+            {
+                if (selectedDims[i].Count == 0)
+                    continue;
+
+                RaycastHit hit;
+                Camera cam = Camera.main;
+                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault(i + 1)))
+                {
+                    Goal newGoal;
+                    Owner ownerComp = hit.transform.GetComponent<Selectable.Owner>();
+                    if (ownerComp != null)
+                        newGoal = new Goal(PlayerNumber, (char)i, hit.transform);
+                    else
+                        newGoal = new Goal(PlayerNumber, (char)i, hit.point);
+
+                    foreach (Owner o in selectedDims[i])
+                    {
+                        o.SetTargetGoal(newGoal);
+
+                        o.OnRightMouse();
+                    }
+                }
             }
         }
 
@@ -341,7 +355,7 @@ namespace Players
         /// Deselects this given object
         /// </summary>
         /// <param name="target">The object to remove from selection</param>
-        void DeselectSingle(Owner target)
+        public void DeselectSingle(Owner target)
         {
             target.onDied -= DeselectSingle;
             target.Deselect();
@@ -361,11 +375,17 @@ namespace Players
             selectedObjects.Add(newlySelected);
             newlySelected.SetHighlighted(false);
             
-            GameObject icon = (GameObject)Instantiate(newlySelected.SelectionIconPrefab);
+            GameObject icon = Instantiate(newlySelected.SelectionIconPrefab);
             icon.GetComponent<Image>().sprite = newlySelected.getImage;
             newlySelected.AddSelectionIcon(PlayerNumber, icon);
             icon.transform.SetParent(selectionContentObject.transform);
             icon.transform.localScale = Vector3.one;
+        }
+
+        public void DeselectAllOthers(Owner onlySelect)
+        {
+            DeselectOld();
+            SelectNew(onlySelect);
         }
 
         /// <summary>

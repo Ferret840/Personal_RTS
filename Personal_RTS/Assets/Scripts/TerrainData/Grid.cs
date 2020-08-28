@@ -38,26 +38,25 @@ namespace TerrainData
 
         Selectable.Units.Unit[] units;
 
-        Grid()
-        {
-            if (grid_Instance != null)
-                if(grid_Instance.gridPtr != IntPtr.Zero)
-                    DestroyGrid(grid_Instance.gridPtr);
-
-            grid_Instance = this;
-        }
-
         public static CustomLogger logger = new CustomLogger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
 
-        public static Grid GetGrid
+        public static Grid Instance
         {
-            get
-            {
-                return grid_Instance;
-            }
+            get;
+            private set;
         }
 
-        static Grid grid_Instance;
+        Grid()
+        {
+            if (Instance != null)
+            {
+                if (Instance.gridPtr != IntPtr.Zero)
+                    DestroyGrid(Instance.gridPtr);
+                Destroy(Instance);
+            }
+
+            Instance = this;
+        }
 
         //public LayerMask unwalkableMask;
         public Vector2 gridWorldSize;

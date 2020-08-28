@@ -7,10 +7,18 @@ namespace Players
 
     public class PlayerManager : MonoBehaviour
     {
-        static public PlayerManager instance
+        static public PlayerManager Instance
         {
             get;
             private set;
+        }
+
+        PlayerManager()
+        {
+            if (Instance != null)
+                Destroy(Instance);
+
+            Instance = this;
         }
 
         public Player[] PlayerList
@@ -28,8 +36,11 @@ namespace Players
         // Use this for initialization
         void Start()
         {
-            instance = this;
+            Initialize();
+        }
 
+        void Initialize()
+        {
             PlayerList = new Player[PlayerCount];
 
             for (int i = 0; i < PlayerCount; ++i)

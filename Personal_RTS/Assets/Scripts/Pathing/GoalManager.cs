@@ -6,16 +6,20 @@ namespace Pathing
 {
     public class GoalManager : MonoBehaviour
     {
-        static public GoalManager GoalManager_Instance;
+        static public GoalManager Instance
+        {
+            get;
+            private set;
+        }
 
         List<Pathing.Goal> goals = new List<Pathing.Goal>();
 
         GoalManager()
         {
-            if (GoalManager_Instance != null)
-                Destroy(GoalManager_Instance);
+            if (Instance != null)
+                Destroy(Instance);
 
-            GoalManager_Instance = this;
+            Instance = this;
         }
 
         public void AddGoal(Pathing.Goal _goal)

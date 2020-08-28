@@ -50,7 +50,7 @@ namespace Selectable
             private set;
         }
 
-        Dictionary<int, GameObject> UISelectionIcons = new Dictionary<int, GameObject>();
+        List<KeyValuePair<int, GameObject>> UISelectionIcons = new List<KeyValuePair<int, GameObject>>();
     
         // Use this for initialization
         void Awake()
@@ -121,15 +121,26 @@ namespace Selectable
 
         virtual public void AddSelectionIcon(int playerNum, GameObject icon)
         {
-            UISelectionIcons.Add(playerNum, icon);
+            UISelectionIcons.Add(new KeyValuePair<int, GameObject>(playerNum, icon));
             icon.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+            icon.GetComponent<SelectionClickHandler>().AddDoubleClick(SelectFromIcon);
+            icon.GetComponent<SelectionClickHandler>().AddRightClick(DeselectFromIcon);
         }
 
         virtual public void RemoveSelectionIcon(int playerNum)
         {
-            GameObject icon = UISelectionIcons[playerNum];
-            UISelectionIcons.Remove(playerNum);
-            Destroy(icon);
+            foreach (var pair in UISelectionIcons)
+            {
+                if (pair.Key == playerNum)
+                {
+                    GameObject icon = pair.Value;
+                    UISelectionIcons.Remove(pair);
+                    icon.GetComponent<SelectionClickHandler>().RemoveDoubleClick(SelectFromIcon);
+                    icon.GetComponent<SelectionClickHandler>().RemoveRightClick(DeselectFromIcon);
+                    Destroy(icon);
+                    return;
+                }
+            }
         }
 
         virtual public void SetHighlighted(bool IsHighlighted)
@@ -144,12 +155,37 @@ namespace Selectable
                 HandleDeath();
             }
             univStats.CurrentHealth = Mathf.Clamp(univStats.CurrentHealth - incomingDamage, 0, univStats.MaxHealth);
-            foreach (var icon in UISelectionIcons)
+            foreach (var pair in UISelectionIcons)
             {
-                icon.Value.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+                pair.Value.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+            }
+
+        }
+
+        void SelectFromIcon(GameObject obj)
+        {
+            foreach(var pair in UISelectionIcons)
+            {
+                if (pair.Value == obj)
+                {
+                    Players.PlayerManager.Instance.PlayerList[pair.Key].Selector.DeselectAllOthers(this);
+                    break;
+                }
             }
         }
-    
+
+        void DeselectFromIcon(GameObject obj)
+        {
+            foreach (var pair in UISelectionIcons)
+            {
+                if (pair.Value == obj)
+                {
+                    Players.PlayerManager.Instance.PlayerList[pair.Key].Selector.DeselectSingle(this);
+                    break;
+                }
+            }
+        }
+
         virtual protected void OnDestroy()
         {
         }
@@ -157,10 +193,14 @@ namespace Selectable
         virtual protected void HandleDeath()
         {
             onDied(this);
-            foreach (var icon in UISelectionIcons)
+
+            foreach (var pair in UISelectionIcons)
             {
-                RemoveSelectionIcon(icon.Key);
+                pair.Value.GetComponent<SelectionClickHandler>().RemoveDoubleClick(SelectFromIcon);
+                Destroy(pair.Value);
             }
+            UISelectionIcons.Clear();
+            
             if(this.TargetGoal != null)
                 TargetGoal.RemoveOwner(gameObject.GetInstanceID());
             Destroy(gameObject);
