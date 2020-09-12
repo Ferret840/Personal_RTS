@@ -34,8 +34,6 @@ namespace Pathing
     const Vector2<int> bottomLeftNode, topRightNode;
     std::unordered_set<int>* ownerIDs;// = new HashSet<Owner>();
     int xPos, yPos, xSector, ySector;
-    int xBLPos, yBLPos, xBLSector, yBLSector;
-    int xTRPos, yTRPos, xTRSector, yTRSector;
 
     IntegrationField* iField;
     FlowField* fField;
@@ -69,7 +67,7 @@ namespace Pathing
 
     void AddOwner(int oID);
 
-    void RemoveOwner(int oID);
+    bool RemoveOwner(int oID);
 
     void ClearOwners();
 
@@ -91,7 +89,7 @@ extern "C"
   GOAL_API int GetOwnerCount(Goal* pGoal);
 
   GOAL_API void AddOwner(Goal* pGoal, int oID);
-  GOAL_API void RemoveOwner(Goal* pGoal, int oID);
+  GOAL_API bool RemoveOwner(Goal* pGoal, int oID);
   GOAL_API void ClearOwners(Goal* pGoal);
   GOAL_API void TransferOwners(Goal* originalGoal, Goal* newGoal);
 

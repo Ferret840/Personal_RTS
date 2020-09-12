@@ -111,9 +111,9 @@ namespace TerrainData
 
                 foreach (Selectable.Units.Unit u in m_Units)
                 {
-                    if (u.TargetGoal != null)
+                    if (u.CurrentGoal != null)
                     {
-                        g = u.TargetGoal;
+                        g = u.CurrentGoal;
                         break;
                     }
                 }

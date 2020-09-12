@@ -28,7 +28,7 @@ namespace Pathing
 
       IFieldNode(int x, int y, IntegrationField* i);
 
-      std::list<IFieldNode*> GetNeighbors(char dim);
+      void GetNeighbors(std::vector<IntegrationField::IFieldNode*>& out, char dim);
     };
 
     Goal* goal;

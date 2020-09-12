@@ -101,7 +101,7 @@ namespace Selectable
 
                     Debug.Log("Unit created");
                     yield return new WaitForSeconds(2);
-                    unitComp.SetTargetGoal(TargetGoal);
+                    unitComp.SetTargetGoal(CurrentGoal);
 
                     m_UnitQueue.Dequeue();
                 }

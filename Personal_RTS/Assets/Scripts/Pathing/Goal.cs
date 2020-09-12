@@ -102,16 +102,16 @@ namespace Pathing
             m_IsStructure = m_TargetStructureComp == null ? false : true;
             m_IsUnit = m_TargetUnitComp == null ? false : true;
 
-            if (m_IsStructure)
+            if (m_IsUnit)
+            {
+                m_GoalPtr = NativeMethods.NewGoal_s(_playerNum, _dimension, _target.position.x, _target.position.y, _target.position.z);
+                GoalManager.Instance.StartCoroutine(this.UpdateTargetLocationAndRepath());
+            }
+            else if (m_IsStructure)
             {
                 Vector3 bottomLeft = m_TargetStructureComp.BottomLeftCorner;
                 Vector3 topRight = m_TargetStructureComp.TopRightCorner;
                 m_GoalPtr = NativeMethods.NewStructureGoal_s(_playerNum, _dimension, bottomLeft.x, bottomLeft.y, bottomLeft.z, topRight.x, topRight.y, topRight.z);
-            }
-            else if (m_IsUnit)
-            {
-                m_GoalPtr = NativeMethods.NewGoal_s(_playerNum, _dimension, _target.position.x, _target.position.y, _target.position.z);
-                GoalManager.Instance.StartCoroutine(UpdateTargetLocationAndRepath());
             }
 
             m_TargetOwnerComp = Target.GetComponent<Selectable.Owner>();
@@ -136,14 +136,14 @@ namespace Pathing
 
             yield return null;
 
-            while (NativeMethods.GetOwnerCount_s(m_GoalPtr) > 0)
+            while (m_GoalPtr != (IntPtr)0 && NativeMethods.GetOwnerCount_s(m_GoalPtr) > 0)
             {
                 if (Target != null && Vector3.SqrMagnitude(Target.position - Position) > sqrDistToTravel)
                 {
                     Position = Target.position;
 
                     IntPtr newGoalPtr = NativeMethods.NewGoal_s(m_PlayerNum, m_Dimension, Position.x, Position.y, Position.z);
-
+                    
                     NativeMethods.TransferOwners_s(m_GoalPtr, newGoalPtr);
 
                     m_GoalPtr = newGoalPtr;
@@ -169,12 +169,17 @@ namespace Pathing
 
         public void RemoveOwner(Selectable.Owner _own)
         {
-            NativeMethods.RemoveOwner_s(m_GoalPtr, _own.gameObject.GetInstanceID());
-            RemoveOnTargetDeathCall(_own.TargetDeathFunction());
-            if (NativeMethods.GetOwnerCount_s(m_GoalPtr) == 0)
+            if (NativeMethods.RemoveOwner_s(m_GoalPtr, _own.gameObject.GetInstanceID()))
             {
+                GoalManager.Instance.StopCoroutine(this.UpdateTargetLocationAndRepath());
                 GoalManager.Instance.RemoveGoal(this);
+                if (m_TargetOwnerComp != null)
+                {
+                    m_TargetOwnerComp.RemoveOnDeathCall(TargetDied);
+                }
+                m_GoalPtr = (IntPtr)0;
             }
+            RemoveOnTargetDeathCall(_own.TargetDeathFunction());
         }
 
         public void TargetDied(Selectable.Owner _owner)
@@ -209,8 +214,9 @@ namespace Pathing
 
         [DllImport("RTS_DLL", EntryPoint = "AddOwner")]
         public static extern void AddOwner_s(IntPtr _pGoal, int _oID);
+        //Returns true if the list of owners is now empty, i.e. goal was destroyed
         [DllImport("RTS_DLL", EntryPoint = "RemoveOwner")]
-        public static extern void RemoveOwner_s(IntPtr _pGoal, int _oID);
+        public static extern bool RemoveOwner_s(IntPtr _pGoal, int _oID);
         [DllImport("RTS_DLL", EntryPoint = "ClearOwners")]
         public static extern void ClearOwners_s(IntPtr _pGoal);
         [DllImport("RTS_DLL", EntryPoint = "TransferOwners")]

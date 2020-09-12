@@ -13,11 +13,11 @@ namespace Pathing
   IntegrationField::IFieldNode::IFieldNode(int x, int y, IntegrationField* i) :xPos(x), yPos(y), iField(i), Used(false), Distance(UINT_MAX / 2)
   {}
 
-  std::list<IntegrationField::IFieldNode*> IntegrationField::IFieldNode::GetNeighbors(char dim)
+  void IntegrationField::IFieldNode::GetNeighbors(std::vector<IntegrationField::IFieldNode*>& out, char dim)
   {
     Grid* g = Grid::GetGrid();
 
-    std::list<IFieldNode*> neighbors = std::list<IFieldNode*>();
+    //std::list<IFieldNode*> neighbors = std::list<IFieldNode*>();
 
     for (int x = -1; x < 2; ++x)
     {
@@ -36,12 +36,12 @@ namespace Pathing
           //    atY = (int)((checkY + 1) * g.SectorSize <= g.gridWorldSize.y ? g.SectorSize / (g.nodeRadius * 2) : g.gridWorldSize.y % g.SectorSize / (g.nodeRadius * 2));
             
           //push back             iField grid            at X sector                      at Y sector                      at X node                        at Y node
-          neighbors.push_back( &(iField->grid[checkX / g->getNodesPerSector()][checkY / g->getNodesPerSector()][checkX % g->getNodesPerSector()][checkY % g->getNodesPerSector()]) );
+          out.push_back( &(iField->grid[checkX / g->getNodesPerSector()][checkY / g->getNodesPerSector()][checkX % g->getNodesPerSector()][checkY % g->getNodesPerSector()]) );
         }
       }
     }
 
-    return neighbors;
+    //return neighbors;
   }
 
   IntegrationField::IntegrationField(Goal* _goal) : goal(_goal)
@@ -136,13 +136,15 @@ namespace Pathing
       }
     }
 
+    std::vector<IntegrationField::IFieldNode*> neighbors;
+    neighbors.reserve(8);
     while (openList.size() > 0)
     {
       n = openList.front();
       openList.pop();
 
       n->Used = true;
-      std::list<IntegrationField::IFieldNode*> neighbors = n->GetNeighbors(goal->dimension);
+      n->GetNeighbors(neighbors, goal->dimension);
       for (auto it = neighbors.begin(); it != neighbors.end(); ++it)
       {
         if ((*it)->Used)
@@ -152,6 +154,7 @@ namespace Pathing
         (*it)->Used = true;
         openList.push(*it);
       }
+      neighbors.clear();
     }
 
 #if _DEBUG

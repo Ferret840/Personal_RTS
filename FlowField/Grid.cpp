@@ -238,10 +238,10 @@ namespace TerrainData
     }
 
     //For each x sector
-    for (int x = clamp(CoordToSectorNumber(BL.x) - 1, 0, sectorCount.x); x <= clamp(CoordToSectorNumber(TR.x) + 1, 0, sectorCount.x); ++x)
+    for (int x = clamp(CoordToSectorNumber(BL.x) - 1, 0, sectorCount.x - 1); x <= clamp(CoordToSectorNumber(TR.x) + 1, 0, sectorCount.x - 1); ++x)
     {
       //For each y sector
-      for (int y = clamp(CoordToSectorNumber(BL.y) - 1, 0, sectorCount.y); y <= clamp(CoordToSectorNumber(TR.y) + 1, 0, sectorCount.y); ++y)
+      for (int y = clamp(CoordToSectorNumber(BL.y) - 1, 0, sectorCount.y - 1); y <= clamp(CoordToSectorNumber(TR.y) + 1, 0, sectorCount.y - 1); ++y)
       {
         int locX = x;
         int locY = y;
@@ -321,9 +321,12 @@ namespace TerrainData
   /// <returns></returns>
   bool Grid::AreaHasObstacle(char dimension, Vector3<float> bottomLeft, Vector3<float> topRight)
   {
-    Vector2<int> BL = grid_Instance->NodeFromWorldPoint(bottomLeft);
+    if (bottomLeft.X < 0 || bottomLeft.Z < 0 || topRight.X > worldSize.x || topRight.Z > worldSize.y)
+      return true;
 
-    Vector2<int> TR = grid_Instance->NodeFromWorldPoint(topRight);
+    Vector2<int> BL = NodeFromWorldPoint(bottomLeft);
+
+    Vector2<int> TR = NodeFromWorldPoint(topRight);
 
     for (int y = BL.y; y <= TR.y; ++y)
     {

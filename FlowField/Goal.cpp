@@ -92,14 +92,19 @@ namespace Pathing
 
   void Goal::AddOwner(int oID)
   {
-    ownerIDs->insert(oID);
+    if(ownerIDs->count(oID) == 0)
+      ownerIDs->insert(oID);
   }
 
-  void Goal::RemoveOwner(int oID)
+  bool Goal::RemoveOwner(int oID)
   {
     ownerIDs->erase(oID);
     if (ownerIDs->size() == 0)
+    {
       delete this;
+      return true;
+    }
+    return false;
   }
 
   void Goal::ClearOwners()
@@ -192,9 +197,10 @@ extern "C"
   {
     pGoal->AddOwner(oID);
   }
-  GOAL_API void RemoveOwner(Goal* pGoal, int oID)
+  //Removes owner ID from list and returns if goal is now empty (i.e. destroyed)
+  GOAL_API bool RemoveOwner(Goal* pGoal, int oID)
   {
-    pGoal->RemoveOwner(oID);
+      return pGoal->RemoveOwner(oID);
   }
   GOAL_API void ClearOwners(Goal* pGoal)
   {

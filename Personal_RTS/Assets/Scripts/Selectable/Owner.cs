@@ -40,7 +40,7 @@ namespace Selectable
         
         public GameObject m_MinimapObject;
     
-        public Goal TargetGoal
+        public Goal CurrentGoal
         {
             get;
             private set;
@@ -106,19 +106,19 @@ namespace Selectable
     
         }
     
-        virtual public void SetTargetGoal(Goal _targetGoal)
+        virtual public void SetTargetGoal(Goal _newGoal)
         {
-            if (TargetGoal != null)
-                TargetGoal.RemoveOwner(this);
+            if (CurrentGoal != null)
+                CurrentGoal.RemoveOwner(this);
 
-            if (_targetGoal == null)
+            if (_newGoal == null || _newGoal.Target == this.transform)
             {
-                TargetGoal = _targetGoal;
+                CurrentGoal = null;
             }
-            else if (_targetGoal.Target != this.transform)
+            else// if (_newGoal.Target != this.transform)
             {
-                TargetGoal = _targetGoal;
-                TargetGoal.AddOwner(this);
+                CurrentGoal = _newGoal;
+                CurrentGoal.AddOwner(this);
             }
         }
 
@@ -239,8 +239,8 @@ namespace Selectable
             }
             m_UISelectionIcons.Clear();
             
-            if(this.TargetGoal != null)
-                TargetGoal.RemoveOwner(this);
+            if(this.CurrentGoal != null)
+                CurrentGoal.RemoveOwner(this);
             Destroy(gameObject);
         }
     }

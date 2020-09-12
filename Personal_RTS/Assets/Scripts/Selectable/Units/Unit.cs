@@ -75,13 +75,13 @@ namespace Selectable
             {
                 base.OnRightMouse();
                 StopCoroutine("FollowPath");
-                if(TargetGoal != null)
+                if(CurrentGoal != null)
                     StartCoroutine("FollowPath");
             }
 
             IEnumerator FollowPath()
             {
-                float moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+                float moveDirection = CurrentGoal.GetDirFromPosition(transform.position);
 
                 Rigidbody rigid = GetComponent<Rigidbody>();
                 CapsuleCollider collider = GetComponent<CapsuleCollider>();
@@ -93,7 +93,7 @@ namespace Selectable
                 {
                     yield return null;
 
-                    moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+                    moveDirection = CurrentGoal.GetDirFromPosition(transform.position);
                 }
                 //rigid.mass /= 10;
                 rigid.drag = 0;
@@ -103,7 +103,7 @@ namespace Selectable
                     if (moveDirection == m_s_STUCKDIRECTION)
                     {
                         yield return null;
-                        moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+                        moveDirection = CurrentGoal.GetDirFromPosition(transform.position);
                         continue;
                     }
 
@@ -117,11 +117,11 @@ namespace Selectable
                     rigid.velocity = rigid.velocity.normalized * m_Stats.m_Speed * Time.deltaTime;
                     //transform.Translate(Vector3.forward * Time.deltaTime * stats.speed, Space.Self);
 
-                    moveDirection = TargetGoal.GetDirFromPosition(transform.position);
+                    moveDirection = CurrentGoal.GetDirFromPosition(transform.position);
 
                     yield return null;
 
-                    if (collider.bounds.SqrDistance(TargetGoal.Position) < collider.radius)
+                    if (collider.bounds.SqrDistance(CurrentGoal.Position) < collider.radius)
                         break;
                 }
                 rigid.velocity = Vector3.zero;
