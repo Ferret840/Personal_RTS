@@ -5,61 +5,61 @@ namespace Tools
 
     public static class Utils
     {
-        static Texture2D _whiteTexture;
+        static Texture2D m_s_WhiteTexture;
         public static Texture2D WhiteTexture
         {
             get
             {
-                if (_whiteTexture == null)
+                if (m_s_WhiteTexture == null)
                 {
-                    _whiteTexture = new Texture2D(1, 1);
-                    _whiteTexture.SetPixel(0, 0, Color.white);
-                    _whiteTexture.Apply();
+                    m_s_WhiteTexture = new Texture2D(1, 1);
+                    m_s_WhiteTexture.SetPixel(0, 0, Color.white);
+                    m_s_WhiteTexture.Apply();
                 }
 
-                return _whiteTexture;
+                return m_s_WhiteTexture;
             }
         }
 
-        public static void DrawScreenRect(Rect rect, Color color)
+        public static void DrawScreenRect_s(Rect _rect, Color _color)
         {
-            GUI.color = color;
-            GUI.DrawTexture(rect, WhiteTexture);
+            GUI.color = _color;
+            GUI.DrawTexture(_rect, WhiteTexture);
             GUI.color = Color.white;
         }
 
-        public static void DrawScreenRectBorder(Rect rect, float thickness, Color color)
+        public static void DrawScreenRectBorder_s(Rect _rect, float _thickness, Color _color)
         {
             // Top
-            Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMin, rect.width, thickness), color);
+            Utils.DrawScreenRect_s(new Rect(_rect.xMin, _rect.yMin, _rect.width, _thickness), _color);
             // Left
-            Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMin, thickness, rect.height), color);
+            Utils.DrawScreenRect_s(new Rect(_rect.xMin, _rect.yMin, _thickness, _rect.height), _color);
             // Right
-            Utils.DrawScreenRect(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), color);
+            Utils.DrawScreenRect_s(new Rect(_rect.xMax - _thickness, _rect.yMin, _thickness, _rect.height), _color);
             // Bottom
-            Utils.DrawScreenRect(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), color);
+            Utils.DrawScreenRect_s(new Rect(_rect.xMin, _rect.yMax - _thickness, _rect.width, _thickness), _color);
         }
 
-        public static Rect GetScreenRect(Vector3 screenPosition1, Vector3 screenPosition2)
+        public static Rect GetScreenRect_s(Vector3 _screenPosition1, Vector3 _screenPosition2)
         {
             // Move origin from bottom left to top left
-            screenPosition1.y = Screen.height - screenPosition1.y;
-            screenPosition2.y = Screen.height - screenPosition2.y;
+            _screenPosition1.y = Screen.height - _screenPosition1.y;
+            _screenPosition2.y = Screen.height - _screenPosition2.y;
             // Calculate corners
-            var topLeft = Vector3.Min(screenPosition1, screenPosition2);
-            var bottomRight = Vector3.Max(screenPosition1, screenPosition2);
+            var topLeft = Vector3.Min(_screenPosition1, _screenPosition2);
+            var bottomRight = Vector3.Max(_screenPosition1, _screenPosition2);
             // Create Rect
             return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
         }
 
-        public static Bounds GetViewportBounds(Camera camera, Vector3 screenPosition1, Vector3 screenPosition2)
+        public static Bounds GetViewportBounds_s(Camera _camera, Vector3 _screenPosition1, Vector3 _screenPosition2)
         {
-            var v1 = Camera.main.ScreenToViewportPoint(screenPosition1);
-            var v2 = Camera.main.ScreenToViewportPoint(screenPosition2);
+            var v1 = Camera.main.ScreenToViewportPoint(_screenPosition1);
+            var v2 = Camera.main.ScreenToViewportPoint(_screenPosition2);
             var min = Vector3.Min(v1, v2);
             var max = Vector3.Max(v1, v2);
-            min.z = camera.nearClipPlane;
-            max.z = camera.farClipPlane;
+            min.z = _camera.nearClipPlane;
+            max.z = _camera.farClipPlane;
 
             var bounds = new Bounds();
             bounds.SetMinMax(min, max);
@@ -70,15 +70,15 @@ namespace Tools
         /// Takes a LayerMask and converts it to an int containing which dimensions are exposed to that LayerMask.
         /// (i.e. It can see Dimension 1 and/or Dimension 2)
         /// </summary>
-        /// <param name="original">The original LayerMask value</param>
+        /// <param name="_original">The original LayerMask value</param>
         /// <returns>Returns an int containing the exposed dimensions</returns>
-        public static int LayerMaskToInt(LayerMask original)
+        public static int LayerMaskToInt_s(LayerMask _original)
         {
             int dim = 0;
 
-            if ((original & (1 << 8)) != 0)
+            if ((_original & (1 << 8)) != 0)
                 dim |= 1;
-            if ((original & (1 << 9)) != 0)
+            if ((_original & (1 << 9)) != 0)
                 dim |= 2;
 
             return dim;
@@ -88,25 +88,25 @@ namespace Tools
         /// Converts the given Layer of an object to which dimension the object exists in.
         /// (i.e. It's in Dimension 1, 2, or Both (3))
         /// </summary>
-        /// <param name="original">The original Layer value of the object</param>
+        /// <param name="_original">The original Layer value of the object</param>
         /// <returns>Returns the game logic value for dimensions</returns>
-        public static int ObjectLayerToInt(int original)
+        public static int ObjectLayerToInt_s(int _original)
         {
             int dim = 0;
 
-            if (original == 8)
+            if (_original == 8)
                 dim |= 1;
-            if (original == 9)
+            if (_original == 9)
                 dim |= 2;
-            if (original == 10)
+            if (_original == 10)
                 dim |= 3;
 
             return dim;
         }
 
-        public static int IntToLayer(int original)
+        public static int IntToLayer_s(int _original)
         {
-            return original + 7;
+            return _original + 7;
         }
     }
 

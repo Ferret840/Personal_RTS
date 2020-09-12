@@ -4,63 +4,61 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-delegate bool MyFunc<T1, T2>(T1 a, out T2 b);
-
 public class SelectionClickHandler : MonoBehaviour, IPointerClickHandler
 {
-    public delegate void OnSingleClickDelegate(GameObject obj);
-    public event OnSingleClickDelegate singleClickDelegate = delegate { };
+    public delegate void SingleClickDelegate(GameObject _obj);
+    event SingleClickDelegate OnSingleClickEvent = delegate { };
 
-    public delegate void OnDoubleClickDelegate(GameObject obj);
-    public event OnDoubleClickDelegate doubleClickDelegate = delegate { };
+    public delegate void DoubleClickDelegate(GameObject _obj);
+    event DoubleClickDelegate OnDoubleClickEvent = delegate { };
 
-    public delegate void OnRightClickDelegate(GameObject obj);
-    public event OnRightClickDelegate rightClickDelegate = delegate { };
+    public delegate void RightClickDelegate(GameObject _obj);
+    event RightClickDelegate OnRightClickEvent = delegate { };
 
-    public void OnPointerClick(PointerEventData eventData)
+    public void OnPointerClick(PointerEventData _eventData)
     {
-        if (eventData.clickCount == 1)
+        if (_eventData.clickCount == 1)
         {
-            if (eventData.button == PointerEventData.InputButton.Left)
+            if (_eventData.button == PointerEventData.InputButton.Left)
             {
-                singleClickDelegate(gameObject);
+                OnSingleClickEvent(gameObject);
             }
-            else if (eventData.button == PointerEventData.InputButton.Right)
+            else if (_eventData.button == PointerEventData.InputButton.Right)
             {
-                rightClickDelegate(gameObject);
+                OnRightClickEvent(gameObject);
             }
         }
-        if (eventData.clickCount == 2)
+        if (_eventData.clickCount == 2)
         {
-            doubleClickDelegate(gameObject);
+            OnDoubleClickEvent(gameObject);
         }
 
     }
 
-    public void AddSingleClick(OnSingleClickDelegate method)
+    public void AddSingleClick(SingleClickDelegate _method)
     {
-        singleClickDelegate += method;
+        OnSingleClickEvent += _method;
     }
-    public void RemoveSingleClick(OnSingleClickDelegate method)
+    public void RemoveSingleClick(SingleClickDelegate _method)
     {
-        singleClickDelegate -= method;
-    }
-
-    public void AddDoubleClick(OnDoubleClickDelegate method)
-    {
-        doubleClickDelegate += method;
-    }
-    public void RemoveDoubleClick(OnDoubleClickDelegate method)
-    {
-        doubleClickDelegate -= method;
+        OnSingleClickEvent -= _method;
     }
 
-    public void AddRightClick(OnRightClickDelegate method)
+    public void AddDoubleClick(DoubleClickDelegate _method)
     {
-        rightClickDelegate += method;
+        OnDoubleClickEvent += _method;
     }
-    public void RemoveRightClick(OnRightClickDelegate method)
+    public void RemoveDoubleClick(DoubleClickDelegate _method)
     {
-        rightClickDelegate -= method;
+        OnDoubleClickEvent -= _method;
+    }
+
+    public void AddRightClick(RightClickDelegate _method)
+    {
+        OnRightClickEvent += _method;
+    }
+    public void RemoveRightClick(RightClickDelegate _method)
+    {
+        OnRightClickEvent -= _method;
     }
 }

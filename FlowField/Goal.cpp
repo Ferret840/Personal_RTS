@@ -80,7 +80,8 @@ namespace Pathing
 
   Goal::~Goal()
   {
-    calculateThread.join();
+    if(calculateThread.joinable())
+      calculateThread.join();
     
     if (ownerIDs != nullptr)
       delete ownerIDs;

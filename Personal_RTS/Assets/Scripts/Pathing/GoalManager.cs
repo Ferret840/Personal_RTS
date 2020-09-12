@@ -12,7 +12,7 @@ namespace Pathing
             private set;
         }
 
-        List<Pathing.Goal> goals = new List<Pathing.Goal>();
+        List<Pathing.Goal> m_Goals = new List<Pathing.Goal>();
 
         GoalManager()
         {
@@ -24,12 +24,12 @@ namespace Pathing
 
         public void AddGoal(Pathing.Goal _goal)
         {
-            goals.Add(_goal);
+            m_Goals.Add(_goal);
         }
 
         public void RemoveGoal(Pathing.Goal _goal)
         {
-            goals.Remove(_goal);
+            m_Goals.Remove(_goal);
         }
     }
 }

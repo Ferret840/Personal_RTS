@@ -12,38 +12,19 @@ namespace Selectable
         [RequireComponent(typeof(Collider))]
         public class Unit : Owner
         {
-            static float ENDDIRECTION = 69.0f;
-            static float STUCKDIRECTION = -69.0f;
-            //const float minPathUpdateTime = .2f;
-            //const float pathUpdateMoveThreshold = .5f;
-            //
-            //public short dimension = 0;
-            //
-            //public Transform target;
-            //public float speed = 5;
-            //public float turnDist = 5;
-            //public float turnSpeed = 3;
-            //public float stoppingDist = 10;
-            //
-
-            PathRequest pathingRequest;
+            const float m_s_ENDDIRECTION = 69.0f;
+            const float m_s_STUCKDIRECTION = -69.0f;
 
             [SerializeField]
-            UnitVariables stats;
+            UnitVariables m_Stats;
 
-            public UnitVariables GetUnitStats
+            public UnitVariables GetUnitStats()
             {
-                get
-                {
-                    return stats;
-                }
+                return m_Stats;
             }
-            public UnitVariables SetUnitStats
+            public void SetUnitStats(UnitVariables _value)
             {
-                set
-                {
-                    stats = value;
-                }
+                m_Stats = _value;
             }
 
             private void Start()
@@ -61,7 +42,7 @@ namespace Selectable
                 //    SetMoveLocation();
                 //}
 
-                if (IsSelected && Input.GetKeyDown(KeyCode.Delete))
+                if (m_IsSelected && Input.GetKeyDown(KeyCode.Delete))
                 {
                     TakeDamage(1);
                 }
@@ -71,7 +52,8 @@ namespace Selectable
             {
                 base.OnRightMouse();
                 StopCoroutine("FollowPath");
-                StartCoroutine("FollowPath");
+                if(TargetGoal != null)
+                    StartCoroutine("FollowPath");
             }
 
             IEnumerator FollowPath()
@@ -84,7 +66,7 @@ namespace Selectable
                 //rigid.mass *= 10;
                 rigid.drag = 10;
 
-                while (moveDirection == STUCKDIRECTION)
+                while (moveDirection == m_s_STUCKDIRECTION)
                 {
                     yield return null;
 
@@ -93,9 +75,9 @@ namespace Selectable
                 //rigid.mass /= 10;
                 rigid.drag = 0;
 
-                while (moveDirection != ENDDIRECTION)
+                while (moveDirection != m_s_ENDDIRECTION)
                 {
-                    if (moveDirection == STUCKDIRECTION)
+                    if (moveDirection == m_s_STUCKDIRECTION)
                     {
                         yield return null;
                         moveDirection = TargetGoal.GetDirFromPosition(transform.position);
@@ -105,18 +87,18 @@ namespace Selectable
                     if (moveDirection == int.MaxValue)
                         break;
 
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0, moveDirection, 0), stats.turnSpeed);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0, moveDirection, 0), m_Stats.m_TurnSpeed);
                     //transform.rotation = Quaternion.Euler(0, moveDirection, 0);
 
-                    rigid.AddForce(transform.forward * stats.speed, ForceMode.VelocityChange);
-                    rigid.velocity = rigid.velocity.normalized * stats.speed * Time.deltaTime;
+                    rigid.AddForce(transform.forward * m_Stats.m_Speed, ForceMode.VelocityChange);
+                    rigid.velocity = rigid.velocity.normalized * m_Stats.m_Speed * Time.deltaTime;
                     //transform.Translate(Vector3.forward * Time.deltaTime * stats.speed, Space.Self);
 
                     moveDirection = TargetGoal.GetDirFromPosition(transform.position);
 
                     yield return null;
 
-                    if (collider.bounds.SqrDistance(TargetGoal.position) < collider.radius)
+                    if (collider.bounds.SqrDistance(TargetGoal.Position) < collider.radius)
                         break;
                 }
                 rigid.velocity = Vector3.zero;
@@ -138,9 +120,9 @@ namespace Selectable
                 //owner.IsSelected = true;
             }
 
-            override public void SetHighlighted(bool IsHighlighted)
+            override public void SetHighlighted(bool _isHighlighted)
             {
-                base.SetHighlighted(IsHighlighted);
+                base.SetHighlighted(_isHighlighted);
                 //owner.HighlightedEffect.SetActive(IsHighlighted);
             }
 
@@ -159,15 +141,15 @@ namespace Selectable
         [System.Serializable]
         public struct UnitVariables
         {
-            const float minPathUpdateTime = .2f;
-            const float pathUpdateMoveThreshold = .5f;
+            const float m_s_MinPathUpdateTime = .2f;
+            const float m_s_PathUpdateMoveThreshold = .5f;
 
-            public short dimension;
+            public short m_Dimension;
 
-            public float speed;
-            public float turnDist;
-            public float turnSpeed;
-            public float stoppingDist;
+            public float m_Speed;
+            public float m_TurnDist;
+            public float m_TurnSpeed;
+            public float m_StoppingDist;
         }
 
     }

@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(EventSystem))]
 public class UIManager : MonoBehaviour
 {
-    EventSystem eventSystem;
+    EventSystem m_EventSystem;
     
     public static UIManager Instance
     {
@@ -25,7 +25,7 @@ public class UIManager : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
-        eventSystem = GetComponent<EventSystem>();
+        m_EventSystem = GetComponent<EventSystem>();
 	}
 	
 	// Update is called once per frame
@@ -35,6 +35,6 @@ public class UIManager : MonoBehaviour
 
     public bool UIIsMouseover()
     {
-        return eventSystem.IsPointerOverGameObject();
+        return m_EventSystem.IsPointerOverGameObject();
     }
 }

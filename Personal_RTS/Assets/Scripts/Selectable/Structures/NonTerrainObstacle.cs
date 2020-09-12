@@ -11,14 +11,14 @@ namespace Selectable
         [RequireComponent(typeof(Collider))]
         public class NonTerrainObstacle : Owner
         {
-            public bool DrawGizmos = false;
+            public bool m_DrawGizmos = false;
 
-            Collider objCollider;
+            Collider m_ObjCollider;
 
-            Vector3[] corners = new Vector3[4];
+            Vector3[] m_Corners = new Vector3[4];
 
             /*public */
-            LayerMask dimension = 0;
+            LayerMask m_Dimension = 0;
 
             Vector3 m_BottomLeft, m_TopRight;
             public Vector3 BottomLeftCorner
@@ -36,7 +36,7 @@ namespace Selectable
                 }
             }
 
-            bool exists;
+            bool m_Exists;
 
             //private void Awake()
             //{
@@ -55,19 +55,28 @@ namespace Selectable
                 UpdateMinimapLayer();
 
                 //Get the collider
-                objCollider = gameObject.GetComponent<Collider>();
+                m_ObjCollider = gameObject.GetComponent<Collider>();
 
-                dimension = gameObject.layer;
+                m_Dimension = gameObject.layer;
 
-                objCollider.enabled = true;
+                m_ObjCollider.enabled = true;
 
                 GetCorners();
                 CheckForBlockedTerrain();//DoesBlockTerrain(true);
+
+                SetChildGlobalScale(m_HighlightedEffect.transform,  transform.lossyScale + Vector3.one * 0.25f);
+                SetChildGlobalScale(m_SelectedEffect.transform,     transform.lossyScale + Vector3.one * 0.25f);
+            }
+
+            virtual protected void SetChildGlobalScale(Transform _transform, Vector3 _globalScale)
+            {
+                _transform.localScale = Vector3.one;
+                _transform.localScale = new Vector3(_globalScale.x / transform.lossyScale.x, _globalScale.y / transform.lossyScale.y, _globalScale.z / transform.lossyScale.z);
             }
 
             override protected void OnDestroy()
             {
-                if (exists)
+                if (m_Exists)
                     DoesBlockTerrain(false);
             }
 
@@ -77,24 +86,24 @@ namespace Selectable
                 Quaternion startRot = transform.rotation;
                 float radians = -startRot.eulerAngles.y * Mathf.Deg2Rad;
                 transform.rotation = Quaternion.identity;
-                Vector3 extent = objCollider.bounds.extents;
+                Vector3 extent = m_ObjCollider.bounds.extents;
 
                 //Get each un-rotated corner
-                corners[0] = new Vector3(extent.x, 0, extent.z);
-                corners[1] = new Vector3(extent.x, 0, -extent.z);
-                corners[2] = new Vector3(-extent.x, 0, extent.z);
-                corners[3] = new Vector3(-extent.x, 0, -extent.z);
+                m_Corners[0] = new Vector3(extent.x, 0, extent.z);
+                m_Corners[1] = new Vector3(extent.x, 0, -extent.z);
+                m_Corners[2] = new Vector3(-extent.x, 0, extent.z);
+                m_Corners[3] = new Vector3(-extent.x, 0, -extent.z);
 
                 //Rotate each corner and move them outward by 1 tile
-                for (int i = 0; i < corners.Length; ++i)
+                for (int i = 0; i < m_Corners.Length; ++i)
                 {
-                    float oldX = corners[i].x;
-                    float oldZ = corners[i].z;
+                    float oldX = m_Corners[i].x;
+                    float oldZ = m_Corners[i].z;
 
-                    corners[i].x = oldX * Mathf.Cos(radians) - oldZ * Mathf.Sin(radians);
-                    corners[i].z = oldX * Mathf.Sin(radians) + oldZ * Mathf.Cos(radians);
+                    m_Corners[i].x = oldX * Mathf.Cos(radians) - oldZ * Mathf.Sin(radians);
+                    m_Corners[i].z = oldX * Mathf.Sin(radians) + oldZ * Mathf.Cos(radians);
 
-                    corners[i] += transform.position;
+                    m_Corners[i] += transform.position;
                 }
 
                 float minX = float.MaxValue;
@@ -102,7 +111,7 @@ namespace Selectable
                 float maxX = float.MinValue;
                 float maxY = float.MinValue;
 
-                foreach (Vector3 v in corners)
+                foreach (Vector3 v in m_Corners)
                 {
                     if (v.x < minX)
                         minX = v.x;
@@ -124,29 +133,29 @@ namespace Selectable
             {
                 Grid gDimension = Grid.Instance;
 
-                if (!gDimension.AreaHasObstacle((char)(dimension - 8), m_BottomLeft, m_TopRight))
+                if (!gDimension.AreaHasObstacle((char)(m_Dimension - 8), m_BottomLeft, m_TopRight))
                     DoesBlockTerrain(true);
                 else
                     Destroy(gameObject);
             }
 
-            protected void DoesBlockTerrain(bool blocksTerrain)
+            protected void DoesBlockTerrain(bool _blocksTerrain)
             {
                 //Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
                 Grid gDimension = Grid.Instance;
 
-                gDimension.ModifyBlockage((char)(dimension - 8), !blocksTerrain, m_BottomLeft, m_TopRight);
+                gDimension.ModifyBlockage((char)(m_Dimension - 8), !_blocksTerrain, m_BottomLeft, m_TopRight);
 
-                exists = blocksTerrain;
+                m_Exists = _blocksTerrain;
             }
 
             private void OnDrawGizmos()
             {
-                if (DrawGizmos)
+                if (m_DrawGizmos)
                 {
                     Gizmos.color = Color.blue;
 
-                    foreach (Vector3 v in corners)
+                    foreach (Vector3 v in m_Corners)
                         Gizmos.DrawSphere(v, 0.5f);
                 }
             }

@@ -11,34 +11,14 @@ namespace TerrainData
 
     public class Grid : MonoBehaviour
     {
-        [DllImport("RTS_DLL", EntryPoint = "NewGrid")]
-        public static extern IntPtr NewGrid(float _nodeRadius = 0.1f, float _worldSizeX = 100.0f, float _worldSizeY = 100.0f, int _sectorSize = 10);
-        [DllImport("RTS_DLL", EntryPoint = "DestroyGrid")]
-        static extern void DestroyGrid(IntPtr pGrid);
+        IntPtr m_GridPtr;
 
-        [DllImport("RTS_DLL", EntryPoint = "GetGrid")]
-        static extern IntPtr GetGridInstance();
+        public bool m_DrawDebuglines = false;
+        public int m_DebugBoxSize = 50;
 
-        [DllImport("RTS_DLL", EntryPoint = "ChangeSectorSize")]
-        static extern void ChangeSectorSize(int newSize);
-        [DllImport("RTS_DLL", EntryPoint = "ChangeWorldSize")]
-        static extern void ChangeWorldSize(float x, float y);
-        [DllImport("RTS_DLL", EntryPoint = "ChangeNodeRadius")]
-        static extern void ChangeNodeRadius(float newRadius);
+        Selectable.Units.Unit[] m_Units;
 
-        [DllImport("RTS_DLL", EntryPoint = "ModifyBlockage")]
-        static extern bool ModifyBlockage(char dimension, bool isWalkable, float blX, float blY, float blZ, float trX, float trY, float trZ);
-        [DllImport("RTS_DLL", EntryPoint = "AreaHasObstacle")]
-        static extern bool AreaHasObstacle(char dimension, float blX, float blY, float blZ, float trX, float trY, float trZ);
-
-        IntPtr gridPtr;
-
-        public bool DrawDebuglines = false;
-        public int DebugBoxSize = 50;
-
-        Selectable.Units.Unit[] units;
-
-        public static CustomLogger logger = new CustomLogger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
+        public static CustomLogger m_s_Logger = new CustomLogger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
 
         public static Grid Instance
         {
@@ -50,8 +30,8 @@ namespace TerrainData
         {
             if (Instance != null)
             {
-                if (Instance.gridPtr != IntPtr.Zero)
-                    DestroyGrid(Instance.gridPtr);
+                if (Instance.m_GridPtr != IntPtr.Zero)
+                    NativeMethods.DestroyGrid_s(Instance.m_GridPtr);
                 Destroy(Instance);
             }
 
@@ -59,77 +39,77 @@ namespace TerrainData
         }
 
         //public LayerMask unwalkableMask;
-        public Vector2 gridWorldSize;
-        public float nodeRadius;
-        public int SectorSize = 10;
+        public Vector2 m_GridWorldSize;
+        public float m_NodeRadius;
+        public int m_SectorSize = 10;
 
-        int prevSectorSize;
-        Vector2 prevWorldSize;
-        float prevNodeRadius;
+        int m_PrevSectorSize;
+        Vector2 m_PrevWorldSize;
+        float m_PrevNodeRadius;
 
-        public LayerMask dim1;
-        public LayerMask dim2;
-        public LayerMask dim3;
+        public LayerMask m_Dim1;
+        public LayerMask m_Dim2;
+        public LayerMask m_Dim3;
 
-        LayerMask view;
+        LayerMask m_View;
 
         private void Awake()
         {
-            gridPtr = NewGrid(nodeRadius, gridWorldSize.x, gridWorldSize.y, SectorSize);
+            m_GridPtr = NativeMethods.NewGrid_s(m_NodeRadius, m_GridWorldSize.x, m_GridWorldSize.y, m_SectorSize);
 
-            prevSectorSize = SectorSize;
-            prevWorldSize = gridWorldSize;
-            prevNodeRadius = nodeRadius;
+            m_PrevSectorSize = m_SectorSize;
+            m_PrevWorldSize = m_GridWorldSize;
+            m_PrevNodeRadius = m_NodeRadius;
 
-            view = dim1;
+            m_View = m_Dim1;
         }
 
         public void Update()
         {
             if (Input.GetKeyDown(KeyCode.Alpha1))
-                view = dim1;
+                m_View = m_Dim1;
             if (Input.GetKeyDown(KeyCode.Alpha2))
-                view = dim2;
+                m_View = m_Dim2;
             if (Input.GetKeyDown(KeyCode.Alpha3))
-                view = dim3;
+                m_View = m_Dim3;
 
-            if (prevSectorSize != SectorSize)
+            if (m_PrevSectorSize != m_SectorSize)
             {
-                ChangeSectorSize(SectorSize);
-                prevSectorSize = SectorSize;
+                NativeMethods.ChangeSectorSize_s(m_SectorSize);
+                m_PrevSectorSize = m_SectorSize;
             }
-            if (prevWorldSize != gridWorldSize)
+            if (m_PrevWorldSize != m_GridWorldSize)
             {
-                ChangeWorldSize(gridWorldSize.x, gridWorldSize.y);
-                prevWorldSize = gridWorldSize;
+                NativeMethods.ChangeWorldSize_s(m_GridWorldSize.x, m_GridWorldSize.y);
+                m_PrevWorldSize = m_GridWorldSize;
             }
-            if (prevNodeRadius != nodeRadius)
+            if (m_PrevNodeRadius != m_NodeRadius)
             {
-                ChangeNodeRadius(nodeRadius);
-                prevNodeRadius = nodeRadius;
+                NativeMethods.ChangeNodeRadius_s(m_NodeRadius);
+                m_PrevNodeRadius = m_NodeRadius;
             }
         }
 
-        public bool AreaHasObstacle(char _dimension, Vector3 _BottomLeft, Vector3 _TopRight)
+        public bool AreaHasObstacle(char _dimension, Vector3 _bottomLeft, Vector3 _topRight)
         {
-            return AreaHasObstacle(_dimension, _BottomLeft.x, _BottomLeft.y, _BottomLeft.z, _TopRight.x, _TopRight.y, _TopRight.z);
+            return NativeMethods.AreaHasObstacle_s(_dimension, _bottomLeft.x, _bottomLeft.y, _bottomLeft.z, _topRight.x, _topRight.y, _topRight.z);
         }
 
-        public bool ModifyBlockage(char _dimension, bool _blocksTerrain, Vector3 _BottomLeft, Vector3 _TopRight)
+        public bool ModifyBlockage(char _dimension, bool _blocksTerrain, Vector3 _bottomLeft, Vector3 _topRight)
         {
-            return ModifyBlockage(_dimension, _blocksTerrain, _BottomLeft.x, _BottomLeft.y, _BottomLeft.z, _TopRight.x, _TopRight.y, _TopRight.z);
+            return NativeMethods.ModifyBlockage_s(_dimension, _blocksTerrain, _bottomLeft.x, _bottomLeft.y, _bottomLeft.z, _topRight.x, _topRight.y, _topRight.z);
         }
 
         void OnDrawGizmos()
         {
-            if (DrawDebuglines)
+            if (m_DrawDebuglines)
             {
-                if (units == null)
-                    units = FindObjectsOfType<Selectable.Units.Unit>();
+                if (m_Units == null)
+                    m_Units = FindObjectsOfType<Selectable.Units.Unit>();
 
                 Pathing.Goal g = null;
 
-                foreach (Selectable.Units.Unit u in units)
+                foreach (Selectable.Units.Unit u in m_Units)
                 {
                     if (u.TargetGoal != null)
                     {
@@ -138,31 +118,54 @@ namespace TerrainData
                     }
                 }
 
-                if(g != null)
+                if (g != null)
                 {
                     RaycastHit hit;
                     Camera cam = Camera.main;
                     Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.Default))
+                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.m_s_Default))
                     {
                         Vector3 mouseCenter = hit.point + Vector3.up;
                         Debug.Log("Angle: " + g.GetDirFromPosition(mouseCenter));
 
-                        for (float x = -DebugBoxSize * nodeRadius; x < DebugBoxSize * nodeRadius; x += (nodeRadius))
+                        for (float x = -m_DebugBoxSize * m_NodeRadius; x < m_DebugBoxSize * m_NodeRadius; x += (m_NodeRadius))
                         {
-                            for (float y = -DebugBoxSize * nodeRadius; y < DebugBoxSize * nodeRadius; y += (nodeRadius))
+                            for (float y = -m_DebugBoxSize * m_NodeRadius; y < m_DebugBoxSize * m_NodeRadius; y += (m_NodeRadius))
                             {
                                 Vector3 at = mouseCenter + new Vector3(x, 0, y);
                                 float angleDir = g.GetDirFromPosition(at) * Mathf.Deg2Rad;
                                 Gizmos.color = Color.red;
-                                Gizmos.DrawLine(at, at + nodeRadius * new Vector3(Mathf.Sin(angleDir), 0, Mathf.Cos(angleDir)));
+                                Gizmos.DrawLine(at, at + m_NodeRadius * new Vector3(Mathf.Sin(angleDir), 0, Mathf.Cos(angleDir)));
                                 Gizmos.color = Color.blue;
-                                Gizmos.DrawWireSphere(at, nodeRadius / 4);
+                                Gizmos.DrawWireSphere(at, m_NodeRadius / 4);
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    internal static class NativeMethods
+    {
+        [DllImport("RTS_DLL", EntryPoint = "NewGrid")]
+        public static extern IntPtr NewGrid_s(float _nodeRadius = 0.1f, float _worldSizeX = 100.0f, float _worldSizeY = 100.0f, int _sectorSize = 10);
+        [DllImport("RTS_DLL", EntryPoint = "DestroyGrid")]
+        public static extern void DestroyGrid_s(IntPtr _pGrid);
+
+        [DllImport("RTS_DLL", EntryPoint = "GetGrid")]
+        public static extern IntPtr GetGridInstance_s();
+
+        [DllImport("RTS_DLL", EntryPoint = "ChangeSectorSize")]
+        public static extern void ChangeSectorSize_s(int _newSize);
+        [DllImport("RTS_DLL", EntryPoint = "ChangeWorldSize")]
+        public static extern void ChangeWorldSize_s(float _x, float _y);
+        [DllImport("RTS_DLL", EntryPoint = "ChangeNodeRadius")]
+        public static extern void ChangeNodeRadius_s(float _newRadius);
+
+        [DllImport("RTS_DLL", EntryPoint = "ModifyBlockage")]
+        public static extern bool ModifyBlockage_s(char _dimension, bool _isWalkable, float _blX, float _blY, float _blZ, float _trX, float _trY, float _trZ);
+        [DllImport("RTS_DLL", EntryPoint = "AreaHasObstacle")]
+        public static extern bool AreaHasObstacle_s(char _dimension, float _blX, float _blY, float _blZ, float _trX, float _trY, float _trZ);
     }
 }

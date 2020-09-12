@@ -370,7 +370,7 @@ namespace TerrainData
           int locY = y;
           int locDim = dimension;
           //New thread
-          std::thread t = std::thread(&Grid::ThreadUpdateSubsectorConnectionsOneDim, this, dimension, locX, locY);
+          std::thread t = std::thread(&Grid::ThreadUpdateSubsectorConnectionsOneDim, this, locDim, locX, locY);
           //Add the new thread and the location to the queues
           modifyThreads.push(std::move(t));
         }

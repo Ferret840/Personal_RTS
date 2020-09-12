@@ -27,11 +27,11 @@ namespace Players
             private set;
         }
 
-        public int PlayerCount;
+        public int m_PlayerCount;
 
-        public Vector3 InitialCameraHeight;
+        public Vector3 m_InitialCameraHeight;
 
-        public GameObject PlayerCameraPrefab;
+        public GameObject m_PlayerCameraPrefab;
 
         // Use this for initialization
         void Start()
@@ -41,10 +41,10 @@ namespace Players
 
         void Initialize()
         {
-            PlayerList = new Player[PlayerCount];
+            PlayerList = new Player[m_PlayerCount];
 
-            for (int i = 0; i < PlayerCount; ++i)
-                PlayerList[i] = new Player(i, InitialCameraHeight, PlayerCameraPrefab);
+            for (int i = 0; i < m_PlayerCount; ++i)
+                PlayerList[i] = new Player(i, m_InitialCameraHeight, m_PlayerCameraPrefab);
         }
 
         // Update is called once per frame

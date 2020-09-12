@@ -18,7 +18,7 @@ namespace Selectable
             // Update is called once per frame
             void Update()
             {
-                if (IsSelected && Input.GetKeyDown(KeyCode.Delete))
+                if (m_IsSelected && Input.GetKeyDown(KeyCode.Delete))
                 {
                     TakeDamage(1);
                 }
@@ -38,9 +38,9 @@ namespace Selectable
                 //owner.IsSelected = true;
             }
 
-            override public void SetHighlighted(bool IsHighlighted)
+            override public void SetHighlighted(bool _isHighlighted)
             {
-                base.SetHighlighted(IsHighlighted);
+                base.SetHighlighted(_isHighlighted);
                 //owner.HighlightedEffect.SetActive(IsHighlighted);
             }
         }

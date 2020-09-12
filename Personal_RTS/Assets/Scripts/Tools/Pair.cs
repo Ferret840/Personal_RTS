@@ -8,10 +8,10 @@ namespace Tools
         {
         }
 
-        public Pair(T first, U second)
+        public Pair(T _first, U _second)
         {
-            this.First = first;
-            this.Second = second;
+            this.First = _first;
+            this.Second = _second;
         }
 
         public T First

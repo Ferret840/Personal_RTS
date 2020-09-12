@@ -7,7 +7,7 @@ namespace Players
 
     public class Player
     {
-        int PlayerNumber;
+        int m_PlayerNumber;
 
         public PlayerCamera Cam
         {
@@ -21,16 +21,16 @@ namespace Players
             private set;
         }
 
-        public Player(int _playerNum, Vector3 initialHeight, GameObject playerCamPrefab)
+        public Player(int _playerNum, Vector3 _initialHeight, GameObject _playerCamPrefab)
         {
-            PlayerNumber = _playerNum;
+            m_PlayerNumber = _playerNum;
 
-            GameObject g = (GameObject)GameObject.Instantiate(playerCamPrefab, initialHeight, Quaternion.Euler(75, 0, 0));
+            GameObject g = (GameObject)GameObject.Instantiate(_playerCamPrefab, _initialHeight, Quaternion.Euler(75, 0, 0));
             Cam = g.GetComponent<PlayerCamera>();
-            Cam.PlayerNumber = PlayerNumber;
+            Cam.m_PlayerNumber = m_PlayerNumber;
 
             Selector = g.GetComponent<UnitSelection>();
-            Selector.PlayerNumber = PlayerNumber;
+            Selector.m_PlayerNumber = m_PlayerNumber;
         }
 
         // Use this for initialization

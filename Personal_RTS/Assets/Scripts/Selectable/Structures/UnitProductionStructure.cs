@@ -12,15 +12,17 @@ namespace Selectable
         public class UnitProductionStructure : Base_Structure
         {
             [SerializeField]
-            GameObject objectBase;
+#pragma warning disable CS0649 // Field 'UnitProductionStructure.m_ObjectBase' is never assigned to, and will always have its default value null
+            GameObject m_ObjectBase;
+#pragma warning restore CS0649 // Field 'UnitProductionStructure.m_ObjectBase' is never assigned to, and will always have its default value null
 
             //public UnitVariables[] SpawnObject = new UnitVariables[0];
-            public ProductionInfo[] SpawnObjects = new ProductionInfo[0];
+            public ProductionInfo[] m_SpawnObjects = new ProductionInfo[0];
 
             //Queue<UnitVariables> queuedUnits = new Queue<UnitVariables>();
-            Queue<ProductionInfo> unitQueue = new Queue<ProductionInfo>();
+            Queue<ProductionInfo> m_UnitQueue = new Queue<ProductionInfo>();
 
-            float buildPercent = 1;
+            float m_BuildPercent = 1;
 
             // Use this for initialization
             void Start()
@@ -42,15 +44,15 @@ namespace Selectable
             /// <summary>
             /// Overrideable function for handling when a key is pressed
             /// </summary>
-            /// <param name="k">An int within Keycode corresponding to the key that was pressed</param>
-            override public void OnKeyDown(KeyCode k)
+            /// <param name="_k">An int within Keycode corresponding to the key that was pressed</param>
+            override public void OnKeyDown(KeyCode _k)
             {
-                if (k >= KeyCode.Keypad0 && k <= KeyCode.Keypad9)
+                if (_k >= KeyCode.Keypad0 && _k <= KeyCode.Keypad9)
                 {
                     //queuedUnits.Enqueue(SpawnObject[k - KeyCode.Keypad0]);
                     //if (queuedUnits.Count > 1)
-                    unitQueue.Enqueue(SpawnObjects[k - KeyCode.Keypad0]);
-                    if (unitQueue.Count == 1)
+                    m_UnitQueue.Enqueue(m_SpawnObjects[_k - KeyCode.Keypad0]);
+                    if (m_UnitQueue.Count == 1)
                     {
                         StartCoroutine(BuildUnit());
                     }
@@ -60,8 +62,8 @@ namespace Selectable
             /// <summary>
             /// Overrideable function for handling when a key is released
             /// </summary>
-            /// <param name="k">An int within Keycode corresponding to the key that was released</param>
-            override public void OnKeyUp(KeyCode k)
+            /// <param name="_k">An int within Keycode corresponding to the key that was released</param>
+            override public void OnKeyUp(KeyCode _k)
             {
 
             }
@@ -80,28 +82,28 @@ namespace Selectable
                 //
                 //    GameObject newUnit = Instantiate(objectBase);
                 //}
-                while (unitQueue.Count > 0)
+                while (m_UnitQueue.Count > 0)
                 {
-                    ProductionInfo o = unitQueue.Peek();
-                    for (float i = 0; i < o.UnivStats.BuildTime; i += Time.deltaTime)
+                    ProductionInfo o = m_UnitQueue.Peek();
+                    for (float i = 0; i < o.m_UnivStats.m_BuildTime; i += Time.deltaTime)
                     {
-                        buildPercent = i / o.UnivStats.BuildTime;
-                        Debug.Log("Training: " + (buildPercent * 100).ToString("F2") + "%");
+                        m_BuildPercent = i / o.m_UnivStats.m_BuildTime;
+                        Debug.Log("Training: " + (m_BuildPercent * 100).ToString("F2") + "%");
 
                         yield return null;
                     }
 
-                    GameObject newUnit = Instantiate(objectBase);
-                    newUnit.layer = Utils.IntToLayer(o.UnitVar.dimension);
+                    GameObject newUnit = Instantiate(m_ObjectBase);
+                    newUnit.layer = Utils.IntToLayer_s(o.m_UnitVar.m_Dimension);
                     //Unit unitComp = newUnit.AddComponent<Unit>();
                     Unit unitComp = newUnit.GetComponent<Unit>();
-                    unitComp.SetUnitStats = o.UnitVar;
+                    unitComp.SetUnitStats(o.m_UnitVar);
 
                     Debug.Log("Unit created");
                     yield return new WaitForSeconds(2);
                     unitComp.SetTargetGoal(TargetGoal);
 
-                    unitQueue.Dequeue();
+                    m_UnitQueue.Dequeue();
                 }
             }
         }
@@ -109,8 +111,8 @@ namespace Selectable
         [System.Serializable]
         public struct ProductionInfo
         {
-            public UniversalStats UnivStats;
-            public UnitVariables UnitVar;
+            public UniversalStats m_UnivStats;
+            public UnitVariables m_UnitVar;
         }
 
     }

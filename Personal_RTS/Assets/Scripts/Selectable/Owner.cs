@@ -16,46 +16,54 @@ namespace Selectable
             protected set;
         }
     
-        public int EditorSetPlayerNum;
+        public int m_EditorSetPlayerNum;
     
         [SerializeField]
-        protected UniversalStats univStats;
+        protected UniversalStats m_UnivStats;
 
-        public GameObject SelectionIconPrefab;
+        public GameObject m_SelectionIconPrefab;
         [SerializeField]
-        protected Sprite image;
-        public Sprite getImage
+        protected Sprite m_Image;
+        public Sprite GetImage
         {
             get
             {
-                return image;
+                return m_Image;
             }
         }
     
         [System.NonSerialized]
-        public bool IsSelected = false;
+        public bool m_IsSelected = false;
     
-        public GameObject SelectedEffect;
-        public GameObject HighlightedEffect;
+        public GameObject m_SelectedEffect;
+        public GameObject m_HighlightedEffect;
         
-        public GameObject MinimapObject;
+        public GameObject m_MinimapObject;
     
-        public delegate void OnDied(Owner owner);
-        public event OnDied onDied;
-    
-        public LayerMask ValidMovementLayers;
         public Goal TargetGoal
         {
             get;
             private set;
         }
 
-        List<KeyValuePair<int, GameObject>> UISelectionIcons = new List<KeyValuePair<int, GameObject>>();
+        public delegate void DeathDelegate(Owner _owner);
+        event DeathDelegate OnDeathDelegateEvent = delegate { };
+
+        public void AddOnDeathCall(DeathDelegate _method)
+        {
+            OnDeathDelegateEvent += _method;
+        }
+        public void RemoveOnDeathCall(DeathDelegate _method)
+        {
+            OnDeathDelegateEvent -= _method;
+        }
+
+        List<KeyValuePair<int, GameObject>> m_UISelectionIcons = new List<KeyValuePair<int, GameObject>>();
     
         // Use this for initialization
         void Awake()
         {
-            PlayerNumber = EditorSetPlayerNum;
+            PlayerNumber = m_EditorSetPlayerNum;
         }
     
         // Use this for initialization
@@ -72,7 +80,7 @@ namespace Selectable
 
         virtual protected void UpdateMinimapLayer()
         {
-            MinimapObject.layer = gameObject.layer + 3;
+            m_MinimapObject.layer = gameObject.layer + 3;
         }
     
         virtual public void OnRightMouse()
@@ -83,17 +91,29 @@ namespace Selectable
         virtual public void SetTargetGoal(Goal _targetGoal)
         {
             if (TargetGoal != null)
-                TargetGoal.RemoveOwner(gameObject.GetInstanceID());
-    
-            TargetGoal = _targetGoal;
-            TargetGoal.AddOwner(gameObject.GetInstanceID());
+                TargetGoal.RemoveOwner(this);
+
+            if (_targetGoal == null)
+            {
+                TargetGoal = _targetGoal;
+            }
+            else if (_targetGoal.Target != this.transform)
+            {
+                TargetGoal = _targetGoal;
+                TargetGoal.AddOwner(this);
+            }
         }
-    
+
+        virtual public Pathing.Goal.TargetDeathDelegate TargetDeathFunction()
+        {
+            return SetTargetGoal;
+        }
+
         /// <summary>
         /// Overrideable function for handling when a key is pressed
         /// </summary>
-        /// <param name="k">An int within Keycode corresponding to the key that was pressed</param>
-        virtual public void OnKeyDown(KeyCode k)
+        /// <param name="_k">An int within Keycode corresponding to the key that was pressed</param>
+        virtual public void OnKeyDown(KeyCode _k)
         {
     
         }
@@ -101,40 +121,40 @@ namespace Selectable
         /// <summary>
         /// Overrideable function for handling when a key is released
         /// </summary>
-        /// <param name="k">An int within Keycode corresponding to the key that was released</param>
-        virtual public void OnKeyUp(KeyCode k)
+        /// <param name="_k">An int within Keycode corresponding to the key that was released</param>
+        virtual public void OnKeyUp(KeyCode _k)
         {
     
         }
     
         virtual public void Deselect()
         {
-            SelectedEffect.SetActive(false);
-            IsSelected = false;
+            m_SelectedEffect.SetActive(false);
+            m_IsSelected = false;
         }
     
         virtual public void Select()
         {
-            SelectedEffect.SetActive(true);
-            IsSelected = true;
+            m_SelectedEffect.SetActive(true);
+            m_IsSelected = true;
         }
 
-        virtual public void AddSelectionIcon(int playerNum, GameObject icon)
+        virtual public void AddSelectionIcon(int _playerNum, GameObject _icon)
         {
-            UISelectionIcons.Add(new KeyValuePair<int, GameObject>(playerNum, icon));
-            icon.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
-            icon.GetComponent<SelectionClickHandler>().AddDoubleClick(SelectFromIcon);
-            icon.GetComponent<SelectionClickHandler>().AddRightClick(DeselectFromIcon);
+            m_UISelectionIcons.Add(new KeyValuePair<int, GameObject>(_playerNum, _icon));
+            _icon.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)m_UnivStats.m_CurrentHealth / (float)m_UnivStats.m_MaxHealth);
+            _icon.GetComponent<SelectionClickHandler>().AddDoubleClick(SelectFromIcon);
+            _icon.GetComponent<SelectionClickHandler>().AddRightClick(DeselectFromIcon);
         }
 
-        virtual public void RemoveSelectionIcon(int playerNum)
+        virtual public void RemoveSelectionIcon(int _playerNum)
         {
-            foreach (var pair in UISelectionIcons)
+            foreach (var pair in m_UISelectionIcons)
             {
-                if (pair.Key == playerNum)
+                if (pair.Key == _playerNum)
                 {
                     GameObject icon = pair.Value;
-                    UISelectionIcons.Remove(pair);
+                    m_UISelectionIcons.Remove(pair);
                     icon.GetComponent<SelectionClickHandler>().RemoveDoubleClick(SelectFromIcon);
                     icon.GetComponent<SelectionClickHandler>().RemoveRightClick(DeselectFromIcon);
                     Destroy(icon);
@@ -143,30 +163,30 @@ namespace Selectable
             }
         }
 
-        virtual public void SetHighlighted(bool IsHighlighted)
+        virtual public void SetHighlighted(bool _isHighlighted)
         {
-            HighlightedEffect.SetActive(IsHighlighted);
+            m_HighlightedEffect.SetActive(_isHighlighted);
         }
     
-        virtual public void TakeDamage(int incomingDamage)
+        virtual public void TakeDamage(int _incomingDamage)
         {
-            if (incomingDamage >= univStats.CurrentHealth)
+            if (_incomingDamage >= m_UnivStats.m_CurrentHealth)
             {
                 HandleDeath();
             }
-            univStats.CurrentHealth = Mathf.Clamp(univStats.CurrentHealth - incomingDamage, 0, univStats.MaxHealth);
-            foreach (var pair in UISelectionIcons)
+            m_UnivStats.m_CurrentHealth = Mathf.Clamp(m_UnivStats.m_CurrentHealth - _incomingDamage, 0, m_UnivStats.m_MaxHealth);
+            foreach (var pair in m_UISelectionIcons)
             {
-                pair.Value.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)univStats.CurrentHealth / (float)univStats.MaxHealth);
+                pair.Value.GetComponent<Image>().color = Color.Lerp(Color.red, Color.green, (float)m_UnivStats.m_CurrentHealth / (float)m_UnivStats.m_MaxHealth);
             }
 
         }
 
-        void SelectFromIcon(GameObject obj)
+        void SelectFromIcon(GameObject _obj)
         {
-            foreach(var pair in UISelectionIcons)
+            foreach(var pair in m_UISelectionIcons)
             {
-                if (pair.Value == obj)
+                if (pair.Value == _obj)
                 {
                     Players.PlayerManager.Instance.PlayerList[pair.Key].Selector.DeselectAllOthers(this);
                     break;
@@ -174,11 +194,11 @@ namespace Selectable
             }
         }
 
-        void DeselectFromIcon(GameObject obj)
+        void DeselectFromIcon(GameObject _obj)
         {
-            foreach (var pair in UISelectionIcons)
+            foreach (var pair in m_UISelectionIcons)
             {
-                if (pair.Value == obj)
+                if (pair.Value == _obj)
                 {
                     Players.PlayerManager.Instance.PlayerList[pair.Key].Selector.DeselectSingle(this);
                     break;
@@ -192,17 +212,17 @@ namespace Selectable
     
         virtual protected void HandleDeath()
         {
-            onDied(this);
+            OnDeathDelegateEvent(this);
 
-            foreach (var pair in UISelectionIcons)
+            foreach (var pair in m_UISelectionIcons)
             {
                 pair.Value.GetComponent<SelectionClickHandler>().RemoveDoubleClick(SelectFromIcon);
                 Destroy(pair.Value);
             }
-            UISelectionIcons.Clear();
+            m_UISelectionIcons.Clear();
             
             if(this.TargetGoal != null)
-                TargetGoal.RemoveOwner(gameObject.GetInstanceID());
+                TargetGoal.RemoveOwner(this);
             Destroy(gameObject);
         }
     }
@@ -210,11 +230,11 @@ namespace Selectable
     [System.Serializable]
     public struct UniversalStats
     {
-        public int Cost;
-        public float BuildTime;
+        public int m_Cost;
+        public float m_BuildTime;
 
-        public int MaxHealth;
-        public int CurrentHealth;
+        public int m_MaxHealth;
+        public int m_CurrentHealth;
     }
 
 }

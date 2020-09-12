@@ -13,63 +13,63 @@ namespace Players
     [RequireComponent(typeof(Camera))]
     public class UnitSelection : MonoBehaviour
     {
-        public int PlayerNumber;
-        public GameObject SelectionCanvasPrefab;
+        public int m_PlayerNumber;
+        public GameObject m_SelectionCanvasPrefab;
 
-        public LayerMask SelectionLayer;
-        public GameObject selectionContentObject;
+        public LayerMask m_SelectionLayer;
+        public GameObject m_SelectionContentObject;
 
         //public float ClickToHoldTime = 0.25f;
-        bool isDragging = false;
-        bool denySelect = false;
-        Vector3 mouseStartPos = Vector3.zero;
+        bool m_IsDragging = false;
+        bool m_DenySelect = false;
+        Vector3 m_MouseStartPos = Vector3.zero;
 
-        Camera cam;
+        Camera m_Cam;
 
-        public HashSet<Owner> selectedObjects
+        public HashSet<Owner> SelectedObjects
         {
             get;
             private set;
         }
 
-        List<Unit> allControlledUnits;// = new List<List<Unit>>(8);
+        List<Unit> m_AllControlledUnits;// = new List<List<Unit>>(8);
 
-        Owner previousMouseover;
+        Owner m_PreviousMouseover;
 
-        public void AddUnit(Unit u)
+        public void AddUnit(Unit _u)
         {
-            allControlledUnits.Add(u);
+            m_AllControlledUnits.Add(_u);
         }
 
-        public void RemoveUnit(Unit u)
+        public void RemoveUnit(Unit _u)
         {
-            allControlledUnits.Remove(u);
+            m_AllControlledUnits.Remove(_u);
         }
 
-        public KeyCode[] Keycodes = new KeyCode[0];
+        public KeyCode[] m_Keycodes = new KeyCode[0];
 
         //Vector2 clickLoc = Vector2.zero;
-        public Vector2 MinDragSize = Vector2.one * 10;
+        public Vector2 m_MinDragSize = Vector2.one * 10;
 
         private void Awake()
         {
-            selectedObjects = new HashSet<Owner>();
-            allControlledUnits = new List<Unit>();
+            SelectedObjects = new HashSet<Owner>();
+            m_AllControlledUnits = new List<Unit>();
         }
 
         // Use this for initialization
         void Start()
         {
-            GameObject g = (GameObject)Instantiate(SelectionCanvasPrefab);
-            selectionContentObject = g.GetComponentInChildren<GridLayoutGroup>().gameObject;
+            GameObject g = (GameObject)Instantiate(m_SelectionCanvasPrefab);
+            m_SelectionContentObject = g.GetComponentInChildren<GridLayoutGroup>().gameObject;
 
-            cam = gameObject.GetComponent<Camera>();
+            m_Cam = gameObject.GetComponent<Camera>();
         }
 
         // Update is called once per frame
         void Update()
         {
-            SelectionLayer = cam.cullingMask - 1;
+            m_SelectionLayer = m_Cam.cullingMask - 1;
 
             HandleMouseInput();
 
@@ -84,31 +84,31 @@ namespace Players
             if (Input.GetButtonDown("SelectDeselect"))
             {
                 if (UIManager.Instance.UIIsMouseover())
-                    denySelect = true;
-                mouseStartPos = Input.mousePosition;
+                    m_DenySelect = true;
+                m_MouseStartPos = Input.mousePosition;
             }
             else if (Input.GetButton("SelectDeselect") == true)
             {
-                if (isDragging == false && !denySelect && (Input.mousePosition - mouseStartPos).sqrMagnitude > MinDragSize.sqrMagnitude)
+                if (m_IsDragging == false && !m_DenySelect && (Input.mousePosition - m_MouseStartPos).sqrMagnitude > m_MinDragSize.sqrMagnitude)
                 {
-                    isDragging = true;
+                    m_IsDragging = true;
                     StartCoroutine(DragHighlight());
                 }
             }
             else if (Input.GetButtonUp("SelectDeselect"))
             {
-                if (!denySelect)
+                if (!m_DenySelect)
                 {
-                    if (isDragging == false)
+                    if (m_IsDragging == false)
                     {
                         ClickSelect();
                     }
                     else
                     {
-                        isDragging = false;
+                        m_IsDragging = false;
                     }
                 }
-                denySelect = false;
+                m_DenySelect = false;
             }
 
             if (Input.GetButtonDown("GiveCommand"))
@@ -126,18 +126,18 @@ namespace Players
 
         void HandleKeyboardInput()
         {
-            foreach (KeyCode k in Keycodes)
+            foreach (KeyCode k in m_Keycodes)
             {
                 if (Input.GetKeyDown(k))
                 {
-                    foreach (Owner o in selectedObjects)
+                    foreach (Owner o in SelectedObjects)
                     {
                         o.OnKeyDown(k);
                     }
                 }
                 else if (Input.GetKeyUp(k))
                 {
-                    foreach (Owner o in selectedObjects)
+                    foreach (Owner o in SelectedObjects)
                     {
                         o.OnKeyUp(k);
                     }
@@ -150,8 +150,8 @@ namespace Players
         /// </summary>
         void ClickSelect()
         {
-            Ray ray = cam.ScreenPointToRay(mouseStartPos);
-            RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
+            Ray ray = m_Cam.ScreenPointToRay(m_MouseStartPos);
+            RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, m_SelectionLayer);
 
             Owner closest = null;
             float dist = float.MaxValue;
@@ -162,7 +162,7 @@ namespace Players
                 if (o == null)
                     continue;
 
-                float newDist = Vector3.SqrMagnitude(Input.mousePosition - cam.WorldToViewportPoint(gameObject.transform.position));
+                float newDist = Vector3.SqrMagnitude(Input.mousePosition - m_Cam.WorldToViewportPoint(gameObject.transform.position));
                 if (newDist < dist)
                 {
                     closest = h.transform.GetComponent<Owner>();
@@ -181,18 +181,18 @@ namespace Players
                 //Deselect all other units
                 DeselectOld();
             }
-            HashSet<Owner>.Enumerator e = selectedObjects.GetEnumerator();
+            HashSet<Owner>.Enumerator e = SelectedObjects.GetEnumerator();
             e.MoveNext();
-            if (selectedObjects.Count > 0 && closest.PlayerNumber != e.Current.PlayerNumber)
+            if (SelectedObjects.Count > 0 && closest.PlayerNumber != e.Current.PlayerNumber)
             {
                 DeselectOld();
             }
 
             //Deselect the single unit if already selected
-            if (selectedObjects.Contains(closest))
+            if (SelectedObjects.Contains(closest))
             {
                 DeselectSingle(closest);
-                selectedObjects.Remove(closest);
+                SelectedObjects.Remove(closest);
             }
             //Otherwise, select the single unit
             else
@@ -209,7 +209,7 @@ namespace Players
 
             List<Owner>[] selectedDims = new List<Owner>[3] { new List<Owner>(), new List<Owner>(), new List<Owner>() };
 
-            foreach (Owner o in selectedObjects)
+            foreach (Owner o in SelectedObjects)
             {
                 selectedDims[o.gameObject.layer - 8].Add(o);
             }
@@ -222,14 +222,14 @@ namespace Players
                 RaycastHit hit;
                 Camera cam = Camera.main;
                 Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault(i + 1)))
+                if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault_s(i + 1)))
                 {
                     Goal newGoal;
                     Owner ownerComp = hit.transform.GetComponent<Selectable.Owner>();
                     if (ownerComp != null)
-                        newGoal = new Goal(PlayerNumber, (char)i, hit.transform);
+                        newGoal = new Goal(m_PlayerNumber, (char)i, hit.transform);
                     else
-                        newGoal = new Goal(PlayerNumber, (char)i, hit.point);
+                        newGoal = new Goal(m_PlayerNumber, (char)i, hit.point);
 
                     foreach (Owner o in selectedDims[i])
                     {
@@ -246,8 +246,8 @@ namespace Players
         /// </summary>
         void MouseOver()
         {
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, SelectionLayer);
+            Ray ray = m_Cam.ScreenPointToRay(Input.mousePosition);
+            RaycastHit[] hits = Physics.RaycastAll(ray, 1024f, m_SelectionLayer);
 
             Owner closest = null;
             float dist = float.MaxValue;
@@ -258,7 +258,7 @@ namespace Players
                 if (o == null)
                     continue;
 
-                float newDist = Vector3.SqrMagnitude(Input.mousePosition - cam.WorldToViewportPoint(gameObject.transform.position));
+                float newDist = Vector3.SqrMagnitude(Input.mousePosition - m_Cam.WorldToViewportPoint(gameObject.transform.position));
                 if (newDist < dist)
                 {
                     closest = h.transform.GetComponent<Owner>();
@@ -266,15 +266,15 @@ namespace Players
                 }
             }
 
-            if (previousMouseover != null)
-                previousMouseover.SetHighlighted(false);
+            if (m_PreviousMouseover != null)
+                m_PreviousMouseover.SetHighlighted(false);
 
             if (closest == null)
             {
                 return;
             }
 
-            previousMouseover = closest;
+            m_PreviousMouseover = closest;
 
             closest.SetHighlighted(true);
         }
@@ -291,10 +291,10 @@ namespace Players
             while (Input.GetButton("SelectDeselect"))
             {
                 //Get every Unit type object
-                foreach (Unit u in allControlledUnits)
+                foreach (Unit u in m_AllControlledUnits)
                 {
-                    int SelectLayer = Utils.LayerMaskToInt(SelectionLayer);
-                    int UnitLayer = Utils.ObjectLayerToInt(u.gameObject.layer);
+                    int SelectLayer = Utils.LayerMaskToInt_s(m_SelectionLayer);
+                    int UnitLayer = Utils.ObjectLayerToInt_s(u.gameObject.layer);
 
                     //If it's owned by the player and is within the selection box in the current viewed dimensions, add it to be highlighted, otherwise unhighlight it
                     if ((SelectLayer & UnitLayer) != 0 && IsWithinSelectionBounds(u.gameObject))
@@ -320,9 +320,9 @@ namespace Players
                 //Deselect all other units
                 DeselectOld();
             }
-            HashSet<Owner>.Enumerator e = selectedObjects.GetEnumerator();
+            HashSet<Owner>.Enumerator e = SelectedObjects.GetEnumerator();
             e.MoveNext();
-            if (selectedObjects.Count > 0 && e.Current.PlayerNumber != PlayerNumber)
+            if (SelectedObjects.Count > 0 && e.Current.PlayerNumber != m_PlayerNumber)
             {
                 DeselectOld();
             }
@@ -332,7 +332,7 @@ namespace Players
             {
                 Owner o = u.GetComponent<Owner>();
                 o.SetHighlighted(false);
-                if (selectedObjects.Contains(o) == false)
+                if (SelectedObjects.Contains(o) == false)
                     SelectNew(o);
             }
         }
@@ -340,74 +340,74 @@ namespace Players
         /// <summary>
         /// Deselects all objects already selected
         /// </summary>
-        void DeselectOld()
+        internal void DeselectOld()
         {
-            foreach (Owner o in selectedObjects)
+            foreach (Owner o in SelectedObjects)
             {
-                o.onDied -= DeselectSingle;
+                o.RemoveOnDeathCall(DeselectSingle);
                 o.Deselect();
-                o.RemoveSelectionIcon(PlayerNumber);
+                o.RemoveSelectionIcon(m_PlayerNumber);
             }
-            selectedObjects.Clear();
+            SelectedObjects.Clear();
         }
 
         /// <summary>
         /// Deselects this given object
         /// </summary>
-        /// <param name="target">The object to remove from selection</param>
-        public void DeselectSingle(Owner target)
+        /// <param name="_target">The object to remove from selection</param>
+        public void DeselectSingle(Owner _target)
         {
-            target.onDied -= DeselectSingle;
-            target.Deselect();
-            target.RemoveSelectionIcon(PlayerNumber);
-            selectedObjects.Remove(target);
+            _target.RemoveOnDeathCall(DeselectSingle);
+            _target.Deselect();
+            _target.RemoveSelectionIcon(m_PlayerNumber);
+            SelectedObjects.Remove(_target);
         }
 
         /// <summary>
         /// Adds a new object to the list of selected objects
         /// </summary>
-        /// <param name="newlySelected">The new object that was selected</param>
-        void SelectNew(Owner newlySelected)
+        /// <param name="_newlySelected">The new object that was selected</param>
+        void SelectNew(Owner _newlySelected)
         {
             //Debug.Log("Selected: " + newlySelected.name);
-            newlySelected.onDied += DeselectSingle;
-            newlySelected.Select();
-            selectedObjects.Add(newlySelected);
-            newlySelected.SetHighlighted(false);
+            _newlySelected.AddOnDeathCall(DeselectSingle);
+            _newlySelected.Select();
+            SelectedObjects.Add(_newlySelected);
+            _newlySelected.SetHighlighted(false);
             
-            GameObject icon = Instantiate(newlySelected.SelectionIconPrefab);
-            icon.GetComponent<Image>().sprite = newlySelected.getImage;
-            newlySelected.AddSelectionIcon(PlayerNumber, icon);
-            icon.transform.SetParent(selectionContentObject.transform);
+            GameObject icon = Instantiate(_newlySelected.m_SelectionIconPrefab);
+            icon.GetComponent<Image>().sprite = _newlySelected.GetImage;
+            _newlySelected.AddSelectionIcon(m_PlayerNumber, icon);
+            icon.transform.SetParent(m_SelectionContentObject.transform);
             icon.transform.localScale = Vector3.one;
         }
 
-        public void DeselectAllOthers(Owner onlySelect)
+        public void DeselectAllOthers(Owner _onlySelect)
         {
             DeselectOld();
-            SelectNew(onlySelect);
+            SelectNew(_onlySelect);
         }
 
         /// <summary>
         /// Checks if a given game object's position is within the selection bounds
         /// </summary>
-        /// <param name="gameObject">The game object to check the position of</param>
+        /// <param name="_gameObject">The game object to check the position of</param>
         /// <returns>Returns True if the position is within the selection bounds</returns>
-        public bool IsWithinSelectionBounds(GameObject gameObject)
+        public bool IsWithinSelectionBounds(GameObject _gameObject)
         {
-            var viewportBounds = Utils.GetViewportBounds(cam, mouseStartPos, Input.mousePosition);
+            var viewportBounds = Utils.GetViewportBounds_s(m_Cam, m_MouseStartPos, Input.mousePosition);
 
-            return viewportBounds.Contains(cam.WorldToViewportPoint(gameObject.transform.position));
+            return viewportBounds.Contains(m_Cam.WorldToViewportPoint(_gameObject.transform.position));
         }
 
         void OnGUI()
         {
-            if (isDragging)
+            if (m_IsDragging)
             {
                 // Create a rect from both mouse positions
-                var rect = Utils.GetScreenRect(mouseStartPos, Input.mousePosition);
+                var rect = Utils.GetScreenRect_s(m_MouseStartPos, Input.mousePosition);
                 //Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
-                Utils.DrawScreenRectBorder(rect, 2, new Color(0.8f, 0.8f, 0.95f));
+                Utils.DrawScreenRectBorder_s(rect, 2, new Color(0.8f, 0.8f, 0.95f));
             }
         }
     }
