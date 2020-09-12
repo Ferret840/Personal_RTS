@@ -38,10 +38,9 @@ namespace Selectable
 
             bool m_Exists;
 
-            //private void Awake()
+            //void Awake()
             //{
-            //    Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
-            //    transform.position = gDimension.NodeFromWorldPoint(transform.position).worldPosition;
+            //    
             //}
 
             // Use this for initialization
@@ -64,11 +63,25 @@ namespace Selectable
                 GetCorners();
                 CheckForBlockedTerrain();//DoesBlockTerrain(true);
 
-                SetChildGlobalScale(m_HighlightedEffect.transform,  transform.lossyScale + Vector3.one * 0.25f);
-                SetChildGlobalScale(m_SelectedEffect.transform,     transform.lossyScale + Vector3.one * 0.25f);
+                SetSelectionSlicedMeshSizes(m_SelectedEffect.GetComponent<SlicedMesh>());
+                SetSelectionSlicedMeshSizes(m_HighlightedEffect.GetComponent<SlicedMesh>());
+                SetChildGlobalScale(m_HighlightedEffect.transform,  Vector3.one);
+                SetChildGlobalScale(m_SelectedEffect.transform,     Vector3.one);
             }
 
-            virtual protected void SetChildGlobalScale(Transform _transform, Vector3 _globalScale)
+            override protected void SetSelectionSlicedMeshSizes(SlicedMesh _sliced)
+            {
+                _sliced.BorderVertical = 0.25f;
+                _sliced.BorderHorizontal = 0.25f;
+
+                _sliced.Height = transform.lossyScale.y + _sliced.BorderVertical * 2f;
+                _sliced.Width = transform.lossyScale.x + _sliced.BorderHorizontal * 2f;
+
+                _sliced.MarginVertical = 0.5f;
+                _sliced.MarginHorizontal = 0.5f;
+            }
+
+            override protected void SetChildGlobalScale(Transform _transform, Vector3 _globalScale)
             {
                 _transform.localScale = Vector3.one;
                 _transform.localScale = new Vector3(_globalScale.x / transform.lossyScale.x, _globalScale.y / transform.lossyScale.y, _globalScale.z / transform.lossyScale.z);

@@ -31,6 +31,11 @@ namespace Selectable
             {
                 UpdateMinimapLayer();
                 PlayerManager.Instance.PlayerList[PlayerNumber].Selector.AddUnit(this);
+
+                SetSelectionSlicedMeshSizes(m_SelectedEffect.GetComponent<SlicedMesh>());
+                SetSelectionSlicedMeshSizes(m_HighlightedEffect.GetComponent<SlicedMesh>());
+                SetChildGlobalScale(m_HighlightedEffect.transform, Vector3.one);
+                SetChildGlobalScale(m_SelectedEffect.transform, Vector3.one);
                 //StartCoroutine(UpdatePath());
                 //PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
             }
@@ -46,6 +51,24 @@ namespace Selectable
                 {
                     TakeDamage(1);
                 }
+            }
+
+            override protected void SetSelectionSlicedMeshSizes(SlicedMesh _sliced)
+            {
+                _sliced.BorderVertical = 0f;
+                _sliced.BorderHorizontal = 0f;
+
+                _sliced.Height = transform.lossyScale.y + 1.0f;
+                _sliced.Width = transform.lossyScale.x + 1.0f;
+
+                _sliced.MarginVertical = 0f;
+                _sliced.MarginHorizontal = 0f;
+            }
+
+            override protected void SetChildGlobalScale(Transform _transform, Vector3 _globalScale)
+            {
+                _transform.localScale = Vector3.one;
+                _transform.localScale = new Vector3(_globalScale.x / transform.lossyScale.x, _globalScale.y / transform.lossyScale.y, _globalScale.z / transform.lossyScale.z);
             }
 
             override public void OnRightMouse()

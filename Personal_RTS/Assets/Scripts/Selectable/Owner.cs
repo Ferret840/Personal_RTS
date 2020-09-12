@@ -78,6 +78,24 @@ namespace Selectable
     
         }
 
+        virtual protected void SetSelectionSlicedMeshSizes(SlicedMesh _sliced)
+        {
+            _sliced.BorderVertical = 0.25f;
+            _sliced.BorderHorizontal = 0.25f;
+
+            _sliced.Height = transform.lossyScale.y + _sliced.BorderVertical * 2f;
+            _sliced.Width = transform.lossyScale.x + _sliced.BorderHorizontal * 2f;
+
+            _sliced.MarginVertical = 0.25f;
+            _sliced.MarginHorizontal = 0.25f;
+        }
+
+        virtual protected void SetChildGlobalScale(Transform _transform, Vector3 _globalScale)
+        {
+            _transform.localScale = Vector3.one;
+            _transform.localScale = new Vector3(_globalScale.x / transform.lossyScale.x, _globalScale.y / transform.lossyScale.y, _globalScale.z / transform.lossyScale.z);
+        }
+
         virtual protected void UpdateMinimapLayer()
         {
             m_MinimapObject.layer = gameObject.layer + 3;
