@@ -120,13 +120,13 @@ public class SlicedMesh : MonoBehaviour
         Mesh mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
 
-        Vector3 midPoint = new Vector3(-m_Width / 2.0f, -m_Height / 2.0f, 0);
+        Vector3 midPoint = new Vector3(-m_Width / 2.0f, 0, -m_Height / 2.0f);
 
         mesh.vertices = new Vector3[] {
             midPoint + new Vector3(0, 0, 0),                         midPoint + new Vector3(m_BorderHorizontal, 0, 0),                         midPoint + new Vector3(m_Width-m_BorderHorizontal, 0, 0),                         midPoint + new Vector3(m_Width, 0, 0),
-            midPoint + new Vector3(0, m_BorderVertical, 0),          midPoint + new Vector3(m_BorderHorizontal, m_BorderVertical, 0),          midPoint + new Vector3(m_Width-m_BorderHorizontal, m_BorderVertical, 0),          midPoint + new Vector3(m_Width, m_BorderVertical, 0),
-            midPoint + new Vector3(0, m_Height-m_BorderVertical, 0), midPoint + new Vector3(m_BorderHorizontal, m_Height-m_BorderVertical, 0), midPoint + new Vector3(m_Width-m_BorderHorizontal, m_Height-m_BorderVertical, 0), midPoint + new Vector3(m_Width, m_Height-m_BorderVertical, 0),
-            midPoint + new Vector3(0, m_Height, 0),                  midPoint + new Vector3(m_BorderHorizontal, m_Height, 0),                  midPoint + new Vector3(m_Width-m_BorderHorizontal, m_Height, 0),                  midPoint + new Vector3(m_Width, m_Height, 0)
+            midPoint + new Vector3(0, 0, m_BorderVertical),          midPoint + new Vector3(m_BorderHorizontal, 0, m_BorderVertical),          midPoint + new Vector3(m_Width-m_BorderHorizontal, 0, m_BorderVertical),          midPoint + new Vector3(m_Width, 0, m_BorderVertical),
+            midPoint + new Vector3(0, 0, m_Height-m_BorderVertical), midPoint + new Vector3(m_BorderHorizontal, 0, m_Height-m_BorderVertical), midPoint + new Vector3(m_Width-m_BorderHorizontal, 0, m_Height-m_BorderVertical), midPoint + new Vector3(m_Width, 0, m_Height-m_BorderVertical),
+            midPoint + new Vector3(0, 0, m_Height),                  midPoint + new Vector3(m_BorderHorizontal, 0, m_Height),                  midPoint + new Vector3(m_Width-m_BorderHorizontal, 0, m_Height),                  midPoint + new Vector3(m_Width, 0, m_Height)
         };
 
         mesh.uv = new Vector2[] {

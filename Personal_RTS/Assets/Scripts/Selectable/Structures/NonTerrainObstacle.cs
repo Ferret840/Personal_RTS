@@ -65,17 +65,17 @@ namespace Selectable
 
                 SetSelectionSlicedMeshSizes(m_SelectedEffect.GetComponent<SlicedMesh>());
                 SetSelectionSlicedMeshSizes(m_HighlightedEffect.GetComponent<SlicedMesh>());
-                SetChildGlobalScale(m_HighlightedEffect.transform,  Vector3.one);
-                SetChildGlobalScale(m_SelectedEffect.transform,     Vector3.one);
+                //SetChildGlobalScale(m_HighlightedEffect.transform,  Vector3.one);
+                //SetChildGlobalScale(m_SelectedEffect.transform,     Vector3.one);
             }
 
             override protected void SetSelectionSlicedMeshSizes(SlicedMesh _sliced)
             {
-                _sliced.BorderVertical = 0.25f;
-                _sliced.BorderHorizontal = 0.25f;
+                _sliced.BorderVertical = 0.5f / transform.lossyScale.z;
+                _sliced.BorderHorizontal = 0.5f / transform.lossyScale.x;
 
-                _sliced.Height = transform.lossyScale.y + _sliced.BorderVertical * 2f;
-                _sliced.Width = transform.lossyScale.x + _sliced.BorderHorizontal * 2f;
+                _sliced.Height = 1f + _sliced.BorderVertical   * 2f;
+                _sliced.Width =  1f + _sliced.BorderHorizontal * 2f;
 
                 _sliced.MarginVertical = 0.5f;
                 _sliced.MarginHorizontal = 0.5f;
