@@ -85,6 +85,16 @@ namespace Pathing
             }
         }
 
+        public bool IsTargetingUnit()
+        {
+            return m_IsUnit;
+        }
+
+        public Selectable.Units.Unit GetTargetUnit()
+        {
+            return m_TargetUnitComp;
+        }
+
         public Goal(int _playerNum, char _dimension, Vector3 _position)
         {
             Init(_playerNum, _dimension, _position);
@@ -131,7 +141,7 @@ namespace Pathing
 
         public IEnumerator UpdateTargetLocationAndRepath()
         {
-            float distToTravel = TerrainData.Grid.Instance.m_NodeRadius * 2;
+            float distToTravel = TerrainData.TerrainGrid.Instance.m_NodeRadius * 2;
             float sqrDistToTravel = distToTravel * distToTravel;
 
             yield return null;
@@ -181,6 +191,26 @@ namespace Pathing
             }
             RemoveOnTargetDeathCall(_own.TargetDeathFunction());
         }
+
+#if DEBUG
+        public void DebugAddUnitSelectionDebugger(Players.UnitSelection _selector)
+        {
+            NativeMethods.AddOwner_s(m_GoalPtr, _selector.gameObject.GetInstanceID());
+        }
+        public void DebugRemoveUnitSelectionDebugger(Players.UnitSelection _selector)
+        {
+            if (NativeMethods.RemoveOwner_s(m_GoalPtr, _selector.gameObject.GetInstanceID()))
+            {
+                GoalManager.Instance.StopCoroutine(this.UpdateTargetLocationAndRepath());
+                GoalManager.Instance.RemoveGoal(this);
+                if (m_TargetOwnerComp != null)
+                {
+                    m_TargetOwnerComp.RemoveOnDeathCall(TargetDied);
+                }
+                m_GoalPtr = (IntPtr)0;
+            }
+        }
+#endif //DEBUG
 
         public void TargetDied(Selectable.Owner _owner)
         {

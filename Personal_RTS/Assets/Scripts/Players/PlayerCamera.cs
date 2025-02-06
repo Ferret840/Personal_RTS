@@ -40,7 +40,7 @@ namespace Players
             m_MinimapCam = Instantiate(m_MinimapCameraPrefab, new Vector3(50, 100, 50), Quaternion.Euler(90, 0, 0)).GetComponent<Camera>();
 
             m_Cam = GetComponent<Camera>();
-            m_Cam.targetDisplay = m_PlayerNumber;
+            //m_Cam.targetDisplay = m_PlayerNumber;
 
             m_View = m_Dimensions[m_ViewIndex];
             m_MinimapView = m_MinimapDimensions[m_ViewIndex];

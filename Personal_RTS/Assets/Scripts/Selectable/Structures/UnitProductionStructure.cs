@@ -31,9 +31,9 @@ namespace Selectable
             }
 
             // Update is called once per frame
-            void Update()
+            override protected void Update()
             {
-
+                base.Update();
             }
 
             override public void OnRightMouse()
@@ -93,7 +93,7 @@ namespace Selectable
                         yield return null;
                     }
 
-                    GameObject newUnit = Instantiate(m_ObjectBase);
+                    GameObject newUnit = Instantiate(m_ObjectBase, transform.position + transform.lossyScale / 2.0f, Quaternion.identity);
                     newUnit.layer = Utils.IntToLayer_s(o.m_UnitVar.m_Dimension);
                     //Unit unitComp = newUnit.AddComponent<Unit>();
                     Unit unitComp = newUnit.GetComponent<Unit>();
@@ -101,7 +101,9 @@ namespace Selectable
 
                     Debug.Log("Unit created");
                     yield return new WaitForSeconds(2);
+                    Debug.Log(CurrentGoal.Position.ToString());
                     unitComp.SetTargetGoal(CurrentGoal);
+                    unitComp.OnRightMouse();
 
                     m_UnitQueue.Dequeue();
                 }
@@ -112,7 +114,7 @@ namespace Selectable
         public struct ProductionInfo
         {
             public UniversalStats m_UnivStats;
-            public UnitVariables m_UnitVar;
+            public UnitMovementVariables m_UnitVar;
         }
 
     }

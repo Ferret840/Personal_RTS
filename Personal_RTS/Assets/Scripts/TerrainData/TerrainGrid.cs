@@ -9,7 +9,7 @@ using System;
 namespace TerrainData
 {
 
-    public class Grid : MonoBehaviour
+    public class TerrainGrid : MonoBehaviour
     {
         IntPtr m_GridPtr;
 
@@ -20,13 +20,13 @@ namespace TerrainData
 
         public static CustomLogger m_s_Logger = new CustomLogger(@"..\Personal_RTS\Assets\Logs\SectorLog.log");
 
-        public static Grid Instance
+        public static TerrainGrid Instance
         {
             get;
             private set;
         }
 
-        Grid()
+        TerrainGrid()
         {
             if (Instance != null)
             {
@@ -120,10 +120,9 @@ namespace TerrainData
 
                 if (g != null)
                 {
-                    RaycastHit hit;
                     Camera cam = Camera.main;
                     Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.m_s_Default))
+                    if (Physics.Raycast(ray, out RaycastHit hit, 1024f, TerrainData.Layers.m_s_Default))
                     {
                         Vector3 mouseCenter = hit.point + Vector3.up;
                         Debug.Log("Angle: " + g.GetDirFromPosition(mouseCenter));

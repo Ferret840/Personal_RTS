@@ -16,11 +16,11 @@ namespace Selectable
             }
 
             // Update is called once per frame
-            void Update()
+            virtual protected void Update()
             {
                 if (m_IsSelected && Input.GetKeyDown(KeyCode.Delete))
                 {
-                    TakeDamage(1);
+                    TakeDamage(75);
                 }
             }
 

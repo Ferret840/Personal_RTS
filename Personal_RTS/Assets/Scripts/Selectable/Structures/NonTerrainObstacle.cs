@@ -144,7 +144,7 @@ namespace Selectable
 
             protected void CheckForBlockedTerrain()
             {
-                Grid gDimension = Grid.Instance;
+                TerrainGrid gDimension = TerrainGrid.Instance;
 
                 if (!gDimension.AreaHasObstacle((char)(m_Dimension - 8), m_BottomLeft, m_TopRight))
                     DoesBlockTerrain(true);
@@ -154,8 +154,8 @@ namespace Selectable
 
             protected void DoesBlockTerrain(bool _blocksTerrain)
             {
-                //Grid gDimension = DimensionManager.GetGridOfDimension(dimension);
-                Grid gDimension = Grid.Instance;
+                //TerrainGrid gDimension = DimensionManager.GetGridOfDimension(dimension);
+                TerrainGrid gDimension = TerrainGrid.Instance;
 
                 gDimension.ModifyBlockage((char)(m_Dimension - 8), !_blocksTerrain, m_BottomLeft, m_TopRight);
 

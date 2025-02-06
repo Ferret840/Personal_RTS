@@ -30,7 +30,7 @@ namespace TerrainData
     public class DimensionManager : MonoBehaviour
     {
         /*
-    Grid[] grids;// = new List<Grid>();
+    TerrainGrid[] grids;// = new List<TerrainGrid>();
 
     static public DimensionManager instance;
 
@@ -39,7 +39,7 @@ namespace TerrainData
     {
         instance = this;
 
-        grids = GameObject.FindObjectsOfType<Grid>();
+        grids = GameObject.FindObjectsOfType<TerrainGrid>();
 	}
 	
 	// Update is called once per frame
@@ -48,7 +48,7 @@ namespace TerrainData
 		
 	}
 
-    static public Grid GetGridOfDimension(int i)
+    static public TerrainGrid GetGridOfDimension(int i)
     {
         return instance.grids[i];
     }*/

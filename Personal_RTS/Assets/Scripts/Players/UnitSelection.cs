@@ -50,6 +50,12 @@ namespace Players
 
         //Vector2 clickLoc = Vector2.zero;
         public Vector2 m_MinDragSize = Vector2.one * 10;
+        
+#if DEBUG
+        Goal m_DebugGoal;
+        public int m_DebugSquareHalfSize = 5; // Radius but square
+
+#endif //DEBUG
 
         private void Awake()
         {
@@ -64,6 +70,8 @@ namespace Players
             m_SelectionContentObject = g.GetComponentInChildren<GridLayoutGroup>().gameObject;
 
             m_Cam = gameObject.GetComponent<Camera>();
+
+            m_Keycodes = new KeyCode[] { KeyCode.Keypad0 };
         }
 
         // Update is called once per frame
@@ -214,6 +222,7 @@ namespace Players
                 selectedDims[o.gameObject.layer - 8].Add(o);
             }
 
+            Debug.Log("IssueCommand");
             for (int i = 0; i < 3; ++i)
             {
                 if (selectedDims[i].Count == 0)
@@ -230,13 +239,21 @@ namespace Players
                         newGoal = new Goal(m_PlayerNumber, (char)i, hit.transform);
                     else
                         newGoal = new Goal(m_PlayerNumber, (char)i, hit.point);
-
+                    
                     foreach (Owner o in selectedDims[i])
                     {
+                        Debug.Log(o.gameObject.name);
                         o.SetTargetGoal(newGoal);
 
                         o.OnRightMouse();
                     }
+
+#if DEBUG
+                    if (m_DebugGoal != null)
+                        m_DebugGoal.DebugRemoveUnitSelectionDebugger(this);
+                    newGoal.DebugAddUnitSelectionDebugger(this);
+                    m_DebugGoal = newGoal;
+#endif //DEBUG
                 }
             }
         }
@@ -410,6 +427,38 @@ namespace Players
                 Utils.DrawScreenRectBorder_s(rect, 2, new Color(0.8f, 0.8f, 0.95f));
             }
         }
-    }
 
+        void OnDrawGizmos()
+        {
+            if (m_DebugGoal != null)
+            {
+                RaycastHit hit;
+                Camera cam = Camera.main;
+                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit, 1024f, TerrainData.Layers.DimAndDefault_s(TerrainData.Layers.m_s_Default)))
+                {
+                    Vector3 hitPoint = hit.point;
+                    Vector3 targetPoint = hitPoint;
+                    Vector3 targetEnd;
+                    targetPoint.x -= m_DebugSquareHalfSize;
+                    targetPoint.z -= m_DebugSquareHalfSize;
+                    float moveDir;
+
+                    float debugSizeScaled = m_DebugSquareHalfSize * TerrainData.TerrainGrid.Instance.m_NodeRadius;
+
+                    for (targetPoint.x = hitPoint.x - debugSizeScaled; targetPoint.x <= hitPoint.x + debugSizeScaled; targetPoint.x += TerrainData.TerrainGrid.Instance.m_NodeRadius)
+                    {
+                        for (targetPoint.z = hitPoint.z - debugSizeScaled; targetPoint.z <= hitPoint.z + debugSizeScaled; targetPoint.z += TerrainData.TerrainGrid.Instance.m_NodeRadius)
+                        {
+                            moveDir = m_DebugGoal.GetDirFromPosition(targetPoint);
+                            Gizmos.color = Color.cyan;
+                            targetEnd = targetPoint + new Vector3(Mathf.Sin(moveDir * Mathf.Deg2Rad), 0, Mathf.Cos(moveDir * Mathf.Deg2Rad)) * TerrainData.TerrainGrid.Instance.m_NodeRadius;
+
+                            Gizmos.DrawLine(targetPoint, targetEnd);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
